@@ -19,7 +19,7 @@ import 'package:timetable/timetable_data.dart';
 import 'model_theme.dart';
 
 String readMeUrl = 'https://raw.githubusercontent.com/umarorakzai012/apkFilesForMyApps/main/README.md';
-String fileUrl = "https://github.com/umarorakzai012/apkFilesForMyApps/raw/main/";
+String fileUrl = "https://github.com/umarorakzai012/apkFilesForMyApps/raw/main";
 
 class YourTimeTable extends StatefulWidget {
   const YourTimeTable({super.key});
@@ -511,9 +511,14 @@ class _YourTimeTableState extends State<YourTimeTable> {
 
   Future<bool> checkIfExits(String url) async {
     var dio = Dio();
-    var response = await dio.head(url);
-    dio.close();
-    return response.statusCode == 200;
+    try{
+      Response<dynamic> response = await dio.head(url).timeout(const Duration(seconds: 2));
+      dio.close();
+      return response.statusCode == 200;
+    } catch(e){
+      // nothing
+    }
+    return false;
   }
 
   void deletion() async{
