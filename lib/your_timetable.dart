@@ -19,7 +19,7 @@ import 'package:timetable/timetable_data.dart';
 import 'model_theme.dart';
 
 String readMeUrl = 'https://raw.githubusercontent.com/umarorakzai012/apkFilesForMyApps/main/README.md';
-String fileUrl = "https://github.com/umarorakzai012/apkFilesForMyApps/raw/main/";
+String fileUrl = "https://github.com/umarorakzai012/apkFilesForMyApps/raw/main";
 
 class YourTimeTable extends StatefulWidget {
   const YourTimeTable({super.key});
@@ -67,6 +67,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
   Widget build(BuildContext context) {
     if(_onceyttd){
       load();
+      deletion();
       checkForUpdate(context);
     }
     return Scaffold(
@@ -436,10 +437,10 @@ class _YourTimeTableState extends State<YourTimeTable> {
 
     _progressValue = 0.0;
     var appDocDir = await getTemporaryDirectory();
-    String savePath = "${appDocDir.path}/$apkName";
+    String savePath = "${appDocDir.path}/app.apk";
     // https://github.com/umarorakzai012/apkFilesForMyApps/raw/main/TimeTable
     fileUrl = "$fileUrl/$apkName";
-    // https://github.com/umarorakzai012/apkFilesForMyApps/raw/main/TimeTable/$apkName //
+    // https://github.com/umarorakzai012/apkFilesForMyApps/raw/main/TimeTable/$apkName
     final dio = Dio();
 
     try {
@@ -457,30 +458,29 @@ class _YourTimeTableState extends State<YourTimeTable> {
         _progressValue = 0;
         Navigator.of(contextfromAbove).pop();
       });
-      await InstallPlugin.install(savePath);
-      deleteFile(File(savePath));
+
+      await InstallPlugin.installApk(savePath);
+
 
     } catch (e) {
       setState(() {
         _progressValue = 0;
         Navigator.of(contextfromAbove).pop();
-        onFailure(contextfromAbove);
+        onFailure(contextfromAbove, e.toString());
       });
     } finally {
       dio.close();
     }
-
-    // final res = await InstallPlugin.install(savePath);
-    // _showResMsg("install apk ${res['isSuccess'] == true ? 'success' : 'fail:${res['errorMessage'] ?? ''}'}");
   }
 
-  void onFailure(BuildContext contextfromAbove){
+  void onFailure(BuildContext contextfromAbove, String msg){
     showDialog(
       context: contextfromAbove,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Updating Failed"),
+          content: Text(msg),
           actions: [
             ElevatedButton(
               child: const Text("Ok"),
@@ -490,16 +490,6 @@ class _YourTimeTableState extends State<YourTimeTable> {
         );
       },
     );
-  }
-
-  Future<void> deleteFile(File file) async {
-    try {
-      if (await file.exists()) {
-        await file.delete();
-      }
-    } catch (e) {
-      // Error in getting access to the file.
-    }
   }
   
   Future<String> getSupportedApk(String version, String appName) async {
@@ -521,8 +511,29 @@ class _YourTimeTableState extends State<YourTimeTable> {
 
   Future<bool> checkIfExits(String url) async {
     var dio = Dio();
-    var response = await dio.head(url);
-    dio.close();
-    return response.statusCode == 200;
+    try{
+      Response<dynamic> response = await dio.head(url).timeout(const Duration(seconds: 2));
+      dio.close();
+      return response.statusCode == 200;
+    } catch(e){
+      // nothing
+    }
+    return false;
+  }
+
+  void deletion() async{
+    var appDocDir = await getTemporaryDirectory();
+    String savePath = "${appDocDir.path}/app.apk";
+    await deleteFile(File(savePath));
+  }
+
+  Future<void> deleteFile(File file) async{
+    try {
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (e) {
+      // Error in getting access to the file.
+    }
   }
 }

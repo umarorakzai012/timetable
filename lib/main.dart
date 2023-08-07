@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:provider/provider.dart';
@@ -33,7 +31,6 @@ class _MyAppState extends State<MyApp> {
     if(_once){
       _once = false;
     }
-    print(Abi.current());
     selectionPreferences = MySelectionPreferences();
     return ChangeNotifierProvider(
       create: (_) => ModelTheme(),
