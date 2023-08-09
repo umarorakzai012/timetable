@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:timetable/choose_courses.dart';
-import 'package:timetable/full_timetable.dart';
+import 'package:timetable/full_free.dart';
 import 'package:timetable/settings.dart';
 import 'package:timetable/upload_timetable.dart';
 
-import 'free_classes.dart';
 import 'your_timetable.dart';
 
 class MyNavigationDrawer extends StatelessWidget {
@@ -68,7 +67,7 @@ class MyNavigationDrawer extends StatelessWidget {
             selected: _screenSelected == 1,
             onTap: () {
               Navigator.of(context).pushReplacement(MaterialPageRoute(
-                builder: (context) => const FullTimeTable(),
+                builder: (context) => const FullFree(1, "Full TimeTable", "Free Slot"),
               ));
             },
           ),
@@ -86,7 +85,7 @@ class MyNavigationDrawer extends StatelessWidget {
             selected: _screenSelected == 5,
             onTap: () {
               Navigator.of(context).pushReplacement(MaterialPageRoute(
-                builder: (context) => const FreeClassesScreen(),
+                builder: (context) => const FullFree(5, "Free Classes", "No Free Classes"),
               ));
             },
           ),

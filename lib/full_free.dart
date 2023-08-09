@@ -1,31 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:timetable/choose_courses.dart';
 import 'package:timetable/navigation_drawer.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:timetable/timetable_data.dart';
 
-import 'choose_courses.dart';
-import 'full_timetable.dart';
 import 'model_theme.dart';
 
-class FreeClassesScreen extends StatefulWidget{
-  const FreeClassesScreen({super.key});
+Map<String, FullTimeTableData> fullTimeTableData = {};
+
+class FullFree extends StatefulWidget {
+  const FullFree(this.naviKey, this.appBarText, this.emptySlot, {super.key});
+  final int naviKey;
+  final String appBarText, emptySlot;
 
   @override
-  State<FreeClassesScreen> createState() => _FreeClassesScreenState();
+  State<FullFree> createState() => _FullFreeTimeTableState();
 }
 
-var _daySelected = "";
-List<String> _allSlot = [];
-String _tileSelected = "";
-PageController _pageController = PageController();
-bool dayChanged = false;
-
-class _FreeClassesScreenState extends State<FreeClassesScreen> {
-  var days = [];
+class _FullFreeTimeTableState extends State<FullFree> {
   Map<String, List<String>> showDayData = {};
-  ItemScrollController ctr = ItemScrollController();
-  ItemScrollController daysCtr = ItemScrollController();
+  ItemScrollController ctr = ItemScrollController(), daysCtr = ItemScrollController();
+  var _daySelected = "", _tileSelected = "";
+  List<String> _allSlot = [], days = [];
+  PageController _pageController = PageController();
 
   @override
   void initState(){
@@ -44,48 +43,61 @@ class _FreeClassesScreenState extends State<FreeClassesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Free Classes"),
+        title: Text(widget.appBarText),
       ),
       body: loaded && fullTimeTableData.isNotEmpty
-          ? buildFreeClassesScreen()
+          ? buildFullTimeTableScreen()
           : const Center(child: Text("Please Upload An Excel File First")),
-      drawer: const MyNavigationDrawer(5),
+      drawer: MyNavigationDrawer(widget.naviKey),
     );
   }
-  
-  Widget buildFreeClassesScreen() {
+
+  Widget buildFullTimeTableScreen() {
     days.clear();
     showDayData.clear();
     for (var day in fullTimeTableData.keys) {
       days.add(day);
     }
-    if(_daySelected.compareTo("") == 0 || !dayChanged){
+    if(_daySelected.compareTo("") == 0){
       int index = (DateTime.now().weekday - 1) >= days.length ? 0 : DateTime.now().weekday - 1;
       _daySelected = days[index];
     }
-    dayChanged = false;
     if(fullTimeTableData[_daySelected] == null) {
       return const Text("");
     }
     _allSlot = fullTimeTableData[_daySelected]!.slots;
     if(_tileSelected.compareTo("") == 0){
+      _pageController.dispose();
       _pageController = PageController(initialPage: 0);
       _tileSelected = _allSlot[0];
     } else {
+      _pageController.dispose();
       _pageController = PageController(initialPage: _allSlot.indexOf(_tileSelected));
     }
 
     for(var key in fullTimeTableData[_daySelected]!.courses.keys){
       var value = fullTimeTableData[_daySelected]!.courses[key]!;
-      if(value.compareTo("free") != 0) continue;
+      if(value == "free" && widget.naviKey == 1) {
+        continue;
+      } else if(value != "free" && widget.naviKey == 5) {
+        continue;
+      }
       var inside = key.split("...");
       var keyClasses = inside[0];
       keyClasses = keyClasses.substring(0, keyClasses.contains("(") ? keyClasses.indexOf("(") : keyClasses.length);
       var keySlot = inside[1];
       if(showDayData.containsKey(keySlot)){
-        showDayData[keySlot]!.add(keyClasses);
+        if(widget.naviKey == 5) {
+          showDayData[keySlot]!.add(keyClasses);
+        } else {
+          showDayData[keySlot]!.add("$keyClasses...$value");
+        }
       } else {
-        showDayData[keySlot] = [keyClasses];
+        if(widget.naviKey == 5){
+          showDayData[keySlot] = [keyClasses];
+        } else {
+          showDayData[keySlot] = ["$keyClasses...$value"];
+        }
       }
     }
     return Column(
@@ -140,7 +152,6 @@ class _FreeClassesScreenState extends State<FreeClassesScreen> {
                   ),
                   onTap: () {
                     setState(() {
-                      dayChanged = true;
                       _tileSelected = _allSlot[index];
                       _pageController.jumpToPage(index);
                     });
@@ -160,6 +171,14 @@ class _FreeClassesScreenState extends State<FreeClassesScreen> {
                   ? 0
                   : fullTimeTableData[_daySelected]!.slots.length,
               itemBuilder: (context, i) {
+                if(!showDayData.containsKey(_allSlot[i])){
+                  return Center(
+                    child: Text(
+                      widget.emptySlot,
+                      style: const TextStyle(fontSize: 30),
+                    ),
+                  );
+                }
                 return SizedBox(
                   width: 150,
                   child: AnimationLimiter(
@@ -168,7 +187,6 @@ class _FreeClassesScreenState extends State<FreeClassesScreen> {
                       shrinkWrap: true,
                       itemCount: showDayData[_allSlot[i]]!.length,
                       itemBuilder: (context, j) {
-                        var classShow = showDayData[_allSlot[i]]![j];
                         return AnimationConfiguration.staggeredList(
                           position: j,
                           duration: const Duration(milliseconds: 375),
@@ -182,7 +200,9 @@ class _FreeClassesScreenState extends State<FreeClassesScreen> {
                                   borderRadius: BorderRadius.circular(15),
                                   gradient: Provider.of<ModelTheme>(context).getGradient()
                                 ),
-                                child: Center(child: makeText(classShow)),
+                                child: widget.naviKey == 1 
+                                  ? makeFullWidget(showDayData[_allSlot[i]]![j])
+                                  : makeFreeWidget(showDayData[_allSlot[i]]![j])
                               ),
                             ),
                           ),
@@ -193,7 +213,6 @@ class _FreeClassesScreenState extends State<FreeClassesScreen> {
                 );
               },
               onPageChanged: (value) {
-                dayChanged = true;
                 var splited = _allSlot[value].split("-");
                 var first = splited[0];
                 var end = splited[1];
@@ -255,7 +274,6 @@ class _FreeClassesScreenState extends State<FreeClassesScreen> {
             ),
             onTap: () {
               setState(() {
-                dayChanged = true;
                 _scrollToIndex(days[index], index, daysCtr, 56);
                 _daySelected = days[index];
                 _tileSelected = fullTimeTableData[_daySelected]!.slots[0];
@@ -268,13 +286,34 @@ class _FreeClassesScreenState extends State<FreeClassesScreen> {
     );
   }
 
-  Widget makeText(String text){
-    return Text(
-      text,
-      style: const TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: 15,
+}
+Widget makeText(String text){
+  return Text(
+    text,
+    textAlign: TextAlign.center,
+    style: const TextStyle(
+      fontWeight: FontWeight.bold,
+      fontSize: 15,
+    ),
+  );
+}
+
+Widget makeFullWidget(String value){
+  var spliting = value.split("...");
+  var classShow = spliting[0];
+  var sectionShow = spliting[1].replaceAll("\n", " ");
+  return Row(
+    children: [
+      SizedBox(
+        width: 80,
+        child: Center(child: makeText(classShow))
       ),
-    );
-  }
+      const SizedBox(width: 25,),
+      Expanded(child: makeText(sectionShow)),
+    ],
+  );
+}
+
+Widget makeFreeWidget(String classShow){
+  return Center(child: makeText(classShow));
 }
