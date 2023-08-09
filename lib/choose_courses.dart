@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:timetable/full_timetable.dart';
+import 'package:timetable/full_free.dart';
 import 'package:timetable/main.dart';
 import 'package:timetable/navigation_drawer.dart';
 import 'package:timetable/timetable_data.dart';

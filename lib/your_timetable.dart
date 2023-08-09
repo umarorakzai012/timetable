@@ -11,7 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:timetable/choose_courses.dart';
-import 'package:timetable/full_timetable.dart';
+import 'package:timetable/full_free.dart';
 import 'package:timetable/navigation_drawer.dart';
 import 'package:timetable/progress_indicator.dart';
 import 'package:timetable/timetable_data.dart';
@@ -29,14 +29,13 @@ class YourTimeTable extends StatefulWidget {
 }
 
 Map<String, YourTimeTableData> yourTimeTableData = {};
-String _daySelectedYourTimeTable = "";
 
 bool _onceyttd = true;
-bool dayChanged = false;
 
 class _YourTimeTableState extends State<YourTimeTable> {
   ItemScrollController ctr = ItemScrollController();
   final _progressDialogKey = GlobalKey<ProgressDialogState>();
+  String _daySelectedYourTimeTable = "";
   
   List<String> readmeContent = [];
   double _progressValue = 0;
@@ -74,7 +73,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
       appBar: AppBar(
         title: const Text("Your TimeTable"),
       ),
-      body: loaded 
+      body: loaded
           ? yourTimeTableData.isEmpty ? const Center(child: Text("Please Select Course(s)"),) : buildYourTimeTableScreen() 
           : const Center(child: Text("Please Upload An Excel File First")),
       drawer : const MyNavigationDrawer(0), 
@@ -102,15 +101,14 @@ class _YourTimeTableState extends State<YourTimeTable> {
   }
 
   Widget buildYourTimeTableScreen() {
-    PageController pageController;
     List<String> days = yourTimeTableData.keys.toList();
     List<List<String>> slots = [], classes = [], value = [];
-    if(_daySelectedYourTimeTable.compareTo("") == 0 || !dayChanged){
-      int index = (DateTime.now().weekday - 1) % days.length;
+    PageController pageController;
+    if(_daySelectedYourTimeTable.compareTo("") == 0){
+      int index = (DateTime.now().weekday - 1) > days.length ? 0 : DateTime.now().weekday - 1;
       pageController = PageController(initialPage: index);
       _daySelectedYourTimeTable = days[index];
     } else {
-      dayChanged = false;
       int index = days.indexOf(_daySelectedYourTimeTable);
       pageController = PageController(initialPage: index);
     }
@@ -196,9 +194,10 @@ class _YourTimeTableState extends State<YourTimeTable> {
                 child: ListTile(
                   title: Container(
                     margin: const EdgeInsets.only(bottom: 10),
-                    child: Center(child: makeText(days[index]))
+                    child: Center(child: makeYourText(days[index]))
                   ),
                   onTap: () {
+                    if(_daySelectedYourTimeTable.compareTo(days[index]) == 0) return;
                     setState(() {
                       _daySelectedYourTimeTable = days[index];
                       pageController.jumpToPage(index);
@@ -251,7 +250,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
                               children: <Widget>[
                                 SizedBox(
                                   width: 90,
-                                  child: Center(child: makeText(classes[i][j]))
+                                  child: Center(child: makeYourText(classes[i][j]))
                                 ),
                                 Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -259,12 +258,12 @@ class _YourTimeTableState extends State<YourTimeTable> {
                                     if(!value[i][j].contains("\n"))...[
                                       SizedBox(
                                         width: MediaQuery.of(context).size.width - 200,
-                                        child: makeText(value[i][j]),
+                                        child: makeYourText(value[i][j]),
                                       ),
                                     ]
                                     else...[
-                                      makeText(value[i][j].split("\n")[0]),
-                                      makeText(value[i][j].split("\n")[1]),
+                                      makeYourText(value[i][j].split("\n")[0]),
+                                      makeYourText(value[i][j].split("\n")[1]),
                                     ]
                                   ],
                                 ),
@@ -273,9 +272,9 @@ class _YourTimeTableState extends State<YourTimeTable> {
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      makeText(top),
-                                      makeText("To"),
-                                      makeText(bottom),
+                                      makeYourText(top),
+                                      makeYourText("To"),
+                                      makeYourText(bottom),
                                     ],
                                   )
                                 ),
@@ -290,7 +289,6 @@ class _YourTimeTableState extends State<YourTimeTable> {
               );
             },
             onPageChanged: (value) {
-              dayChanged = true;
               setState(() {
                 double size = 15;
                 if(MediaQuery.of(context).size.width < 350){
@@ -332,7 +330,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
     return slot;
   }
 
-  Widget makeText(String text){
+  Widget makeYourText(String text){
     double size = 15;
     if(MediaQuery.of(context).size.width < 350){
       size = 11;

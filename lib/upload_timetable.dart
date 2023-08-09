@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:excel/excel.dart';
@@ -8,7 +9,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timetable/choose_courses.dart';
-import 'package:timetable/full_timetable.dart';
+import 'package:timetable/full_free.dart';
 import 'package:timetable/main.dart';
 import 'package:timetable/timetable_data.dart';
 import 'package:flutter/material.dart';
@@ -65,6 +66,11 @@ class _UploadTimeTableScreenState extends State<UploadTimeTableScreen> {
           fullTimeTableData.clear();
 
           await read(fileBytes);
+
+          File file = File(result.files.first.path!);
+          if(file.existsSync()){
+            file.deleteSync();
+          } 
 
           if(fullTimeTableData.isNotEmpty){
             for(int i = 0; i < chooseCourse.course.length; i++){
