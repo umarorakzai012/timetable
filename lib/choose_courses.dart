@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:timetable/enum_screen.dart';
 import 'package:timetable/full_free.dart';
 import 'package:timetable/main.dart';
 import 'package:timetable/navigation_drawer.dart';
@@ -17,16 +18,16 @@ bool loaded = false;
 List<String> selected = [];
 Map<String, bool> current = {};
 
-bool _oncecc = true;
+bool oncecc = true;
 
 class _ChooseCourseScreenState extends State<ChooseCourseScreen> {
   var _showBy = "";
 
   @override
   Widget build(BuildContext context) {
-    if(_oncecc){
-      _oncecc = false;
+    if(oncecc){
       load();
+      oncecc = false;
     }
     Set<String> copyChoose = {};
     for(int i = 0; i < chooseCourse.course.length; i++){
@@ -43,7 +44,9 @@ class _ChooseCourseScreenState extends State<ChooseCourseScreen> {
         onPressed: () {
           ChooseCourse.setCurrent(true, current);
           ChooseCourse.setSelected(true, selected);
+          
           showToast(context, "Saved");
+
           yourTimeTableData.clear();
           for(var key in fullTimeTableData.keys){
             yourTimeTableData[key] = YourTimeTableData();
@@ -103,14 +106,14 @@ class _ChooseCourseScreenState extends State<ChooseCourseScreen> {
         ],
       ) 
       : const Center(child: Text("Please Upload an Excel File First")),
-      drawer: const MyNavigationDrawer(2),
+      drawer: MyNavigationDrawer(Screen.courseList, context),
     );
   }
 
   void load() async {
     var loaded = await ChooseCourse.isLoaded();
     if(loaded){
-      var temp = await ChooseCourse.getchooseCourse();
+      var temp = await ChooseCourse.getChooseCourse();
       chooseCourse = temp;
     }
 

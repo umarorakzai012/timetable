@@ -27,7 +27,7 @@ class ProgressDialogState extends State<ProgressDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Center(child: Text('Downloading')),
+      title: Center(child: Text('Downloading (${(progress*100).toStringAsFixed(0)})%')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

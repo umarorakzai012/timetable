@@ -12,16 +12,16 @@ class FullTimeTableData {
     return loadeded ?? false;
   }
 
-  static void setLoaded(bool loaded, Map<String, FullTimeTableData> fttdm) async {
+  static Future<void> setLoaded(bool loaded, Map<String, FullTimeTableData> fttdm) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool(_loadedKey, loaded);
-    prefs.setStringList("fttdm keys", fttdm.keys.toList());
+    await prefs.setBool(_loadedKey, loaded);
+    await prefs.setStringList("fttdm keys", fttdm.keys.toList());
 
     for(var keys in fttdm.keys){
-      prefs.setStringList("fttd $keys slots", fttdm[keys]!.slots);
-      prefs.setStringList("fttd $keys classes", fttdm[keys]!.classes);
-      prefs.setStringList("fttd $keys courses keys", fttdm[keys]!.courses.keys.toList());
-      prefs.setStringList("fttd $keys courses value", fttdm[keys]!.courses.values.toList());
+      await prefs.setStringList("fttd $keys slots", fttdm[keys]!.slots);
+      await prefs.setStringList("fttd $keys classes", fttdm[keys]!.classes);
+      await prefs.setStringList("fttd $keys courses keys", fttdm[keys]!.courses.keys.toList());
+      await prefs.setStringList("fttd $keys courses value", fttdm[keys]!.courses.values.toList());
     }
   }
 
@@ -54,17 +54,17 @@ class YourTimeTableData {
     return  isLoadededed ?? false;
   }
 
-  static void setYourTimeTableData(bool loaded, Map<String, YourTimeTableData> yttdm) async {
+  static Future<void> setYourTimeTableData(bool loaded, Map<String, YourTimeTableData> yttdm) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool("YourTimeTableData yourCourses loaded", loaded);
+    await prefs.setBool("YourTimeTableData yourCourses loaded", loaded);
     List<String> yttdmKeys = yttdm.keys.toList();
-    prefs.setStringList("yttdm keys", yttdmKeys);
+    await prefs.setStringList("yttdm keys", yttdmKeys);
     for(var yttdmKey in yttdmKeys){
       YourTimeTableData yttd = yttdm[yttdmKey]!;
       List<String> yttdKeys = yttd.yourCourses.keys.toList();
-      prefs.setStringList("yttd $yttdmKey", yttdKeys);
+      await prefs.setStringList("yttd $yttdmKey", yttdKeys);
       for(var yttdKey in yttdKeys){
-        prefs.setStringList("yttd value $yttdmKey $yttdKey", yttd.yourCourses[yttdKey]!);
+        await prefs.setStringList("yttd value $yttdmKey $yttdKey", yttd.yourCourses[yttdKey]!);
       }
     }
   }
@@ -118,16 +118,16 @@ class ChooseCourse {
     return prefs.getBool(_loadedKey) == null ? false : prefs.getBool(_loadedKey)!;
   }
 
-  static void setLoaded(bool loaded, ChooseCourse cc) async {
+  static Future<void> setLoaded(bool loaded, ChooseCourse cc) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool(_loadedKey, loaded);
-    prefs.setStringList("cccourse", cc.course.toList());
+    await prefs.setBool(_loadedKey, loaded);
+    await prefs.setStringList("cccourse", cc.course.toList());
   }
 
-  static void setSelected(bool isLoaded, List<String> selected) async {
+  static Future<void> setSelected(bool isLoaded, List<String> selected) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool("selected is loaded", isLoaded);
-    prefs.setStringList("selected", selected);
+    await prefs.setBool("selected is loaded", isLoaded);
+    await prefs.setStringList("selected", selected);
   }
 
   static Future<bool> getIsSelectedLoaded() async {
@@ -141,13 +141,15 @@ class ChooseCourse {
     return prefs.getStringList("selected")!;  
   }
 
-  static void setCurrent(bool isLoaded, Map<String, bool> currents) async {
+  static Future<void> setCurrent(bool isLoaded, Map<String, bool> currents) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool("current is loaded", isLoaded);
-    prefs.setStringList("current keys", currents.keys.toList());
-    for(var key in currents.keys){
-      prefs.setBool("current $key value", currents[key]!);
-    }
+    await prefs.setBool("current is loaded", isLoaded);
+    await prefs.setStringList("current keys", currents.keys.toList());
+    var temp = currents.values.map((e) => e.toString()).toList();
+    await prefs.setStringList("current value as string", temp);
+    // for(var key in currents.keys){
+    //   await prefs.setBool("current $key value", currents[key]!);
+    // }
   }
 
   static Future<bool> getIsCurrentLoaded() async {
@@ -160,14 +162,17 @@ class ChooseCourse {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     Map<String, bool> currents = {};
     var keys = prefs.getStringList("current keys")!;
+    var temp = prefs.getStringList("current value as string")!.map((e) => e.compareTo("true") == 0).toList();
+
+    int i = 0;
     for(var key in keys){
-      currents[key] = prefs.getBool("current $key value")!;
+      currents[key] = temp[i++];
     }
 
     return currents;
   }  
 
-  static Future<ChooseCourse> getchooseCourse() async {
+  static Future<ChooseCourse> getChooseCourse() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     ChooseCourse cc = ChooseCourse();
     cc.course = prefs.getStringList("cccourse")!.toSet();

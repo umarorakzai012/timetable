@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:timetable/choose_courses.dart';
+import 'package:timetable/enum_screen.dart';
 import 'package:timetable/full_free.dart';
 import 'package:timetable/navigation_drawer.dart';
 import 'package:timetable/progress_indicator.dart';
@@ -39,28 +40,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
   
   List<String> readmeContent = [];
   double _progressValue = 0;
-
-  @override
-  void initState(){
-    super.initState();
-    // var width = MediaQuery.of(context).size.width;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if(_onceyttd){
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
-      if(yourTimeTableData.isNotEmpty){
-        List<String> days = yourTimeTableData.keys.toList();
-        double size = 15;
-        if(MediaQuery.of(context).size.width < 350){
-          size = 11;
-        }
-        TextStyle textStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: size);
-        final Size txtSize = _textSize(_daySelectedYourTimeTable, textStyle);
-        var offset = (txtSize.width + 40) / MediaQuery.of(context).size.width;
-        ctr.jumpTo(index: days.indexOf(_daySelectedYourTimeTable), alignment: 0.5 - offset / 2);
-      }
-    });
-  }
+  bool firstTime = true;
 
   @override
   Widget build(BuildContext context) {
@@ -76,15 +56,12 @@ class _YourTimeTableState extends State<YourTimeTable> {
       body: loaded
           ? yourTimeTableData.isEmpty ? const Center(child: Text("Please Select Course(s)"),) : buildYourTimeTableScreen() 
           : const Center(child: Text("Please Upload An Excel File First")),
-      drawer : const MyNavigationDrawer(0), 
+      drawer : MyNavigationDrawer(Screen.yourTimeTable, context), 
     );
   }
 
-  void load() async {
+  Future<void> load() async {
     loaded = await FullTimeTableData.isLoaded() && await ChooseCourse.isLoaded();
-    setState(() {
-      
-    });
     if(loaded){
       var temp = await FullTimeTableData.getFullTimeTableData();
       fullTimeTableData = temp;
@@ -102,10 +79,31 @@ class _YourTimeTableState extends State<YourTimeTable> {
 
   Widget buildYourTimeTableScreen() {
     List<String> days = yourTimeTableData.keys.toList();
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      int value = days.indexOf(_daySelectedYourTimeTable);
+      if(value == -1) return;
+      double size = 15;
+      if(MediaQuery.of(context).size.width < 350){
+        size = 11;
+      }
+      TextStyle textStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: size);
+      final Size txtSize = textSize(days[value], textStyle);
+      var offset = (txtSize.width + 40) / MediaQuery.of(context).size.width;
+      if(firstTime) {
+        firstTime = false;
+        ctr.jumpTo(index: value);
+      } else {
+        ctr.scrollTo(
+          index: value,
+          duration: const Duration(milliseconds: 375),
+          alignment: 0.5 - offset / 2
+        );
+      }
+    });
     List<List<String>> slots = [], classes = [], value = [];
     PageController pageController;
     if(_daySelectedYourTimeTable.compareTo("") == 0){
-      int index = (DateTime.now().weekday - 1) > days.length ? 0 : DateTime.now().weekday - 1;
+      int index = (DateTime.now().weekday - 1) >= days.length ? 0 : DateTime.now().weekday - 1;
       pageController = PageController(initialPage: index);
       _daySelectedYourTimeTable = days[index];
     } else {
@@ -182,7 +180,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
                 size = 11;
               }
               TextStyle textStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: size);
-              final Size txtSize = _textSize(days[index], textStyle);
+              final Size txtSize = textSize(days[index], textStyle);
               bool selected = _daySelectedYourTimeTable.compareTo(days[index]) == 0;
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 375),
@@ -198,10 +196,8 @@ class _YourTimeTableState extends State<YourTimeTable> {
                   ),
                   onTap: () {
                     if(_daySelectedYourTimeTable.compareTo(days[index]) == 0) return;
-                    setState(() {
-                      _daySelectedYourTimeTable = days[index];
-                      pageController.jumpToPage(index);
-                    });
+                    _daySelectedYourTimeTable = days[index];
+                    pageController.jumpToPage(index);
                   },
                 ),
               );
@@ -290,13 +286,6 @@ class _YourTimeTableState extends State<YourTimeTable> {
             },
             onPageChanged: (value) {
               setState(() {
-                double size = 15;
-                if(MediaQuery.of(context).size.width < 350){
-                  size = 11;
-                }
-                TextStyle textStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: size);
-                final Size txtSize = _textSize(days[value], textStyle);
-                _scrollToIndex(value, txtSize, 40);
                 _daySelectedYourTimeTable = days[value];
               });
             },
@@ -304,13 +293,6 @@ class _YourTimeTableState extends State<YourTimeTable> {
         )
       ],
     );
-  }
-
-  Size _textSize(String text, TextStyle style) {
-    final TextPainter textPainter = TextPainter(
-        text: TextSpan(text: text, style: style), maxLines: 1, textDirection: TextDirection.ltr)
-      ..layout(minWidth: 0, maxWidth: double.infinity);
-    return textPainter.size;
   }
 
   String formattingSlots(String slot){
@@ -330,6 +312,13 @@ class _YourTimeTableState extends State<YourTimeTable> {
     return slot;
   }
 
+  Size textSize(String text, TextStyle style) {
+    final TextPainter textPainter = TextPainter(
+        text: TextSpan(text: text, style: style), maxLines: 1, textDirection: TextDirection.ltr)
+      ..layout(minWidth: 0, maxWidth: double.infinity);
+    return textPainter.size;
+  }
+
   Widget makeYourText(String text){
     double size = 15;
     if(MediaQuery.of(context).size.width < 350){
@@ -343,15 +332,6 @@ class _YourTimeTableState extends State<YourTimeTable> {
         fontWeight: FontWeight.bold,
         fontSize: size,
       ),
-    );
-  }
-
-  void _scrollToIndex(int index, Size txtSize, int additional) {
-    var offset = (txtSize.width + additional) / MediaQuery.of(context).size.width;
-    ctr.scrollTo(
-      index: index,
-      duration: const Duration(milliseconds: 375),
-      alignment: 0.5 - offset / 2
     );
   }
 
@@ -387,7 +367,6 @@ class _YourTimeTableState extends State<YourTimeTable> {
       // doing nothing on failure
     }
   }
-
 
   void _showAvailableUpdateAlertDialog(BuildContext contextfromAbove, String apkName) {
     showDialog(  

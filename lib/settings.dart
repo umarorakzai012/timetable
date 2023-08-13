@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:timetable/enum_screen.dart';
 import 'package:timetable/main.dart';
 import 'package:timetable/navigation_drawer.dart';
 
@@ -45,7 +46,7 @@ class _SettingScreenState extends State<SettingScreen> {
           )
         ],
       ),
-      drawer: const MyNavigationDrawer(4),
+      drawer: MyNavigationDrawer(Screen.settings, context),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:timetable/choose_courses.dart';
+import 'package:timetable/enum_screen.dart';
 import 'package:timetable/navigation_drawer.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:timetable/timetable_data.dart';
@@ -12,7 +13,7 @@ Map<String, FullTimeTableData> fullTimeTableData = {};
 
 class FullFree extends StatefulWidget {
   const FullFree(this.naviKey, this.appBarText, this.emptySlot, {super.key});
-  final int naviKey;
+  final Screen naviKey;
   final String appBarText, emptySlot;
 
   @override
@@ -48,7 +49,7 @@ class _FullFreeTimeTableState extends State<FullFree> {
       body: loaded && fullTimeTableData.isNotEmpty
           ? buildFullTimeTableScreen()
           : const Center(child: Text("Please Upload An Excel File First")),
-      drawer: MyNavigationDrawer(widget.naviKey),
+      drawer: MyNavigationDrawer(widget.naviKey, context),
     );
   }
 
@@ -77,9 +78,9 @@ class _FullFreeTimeTableState extends State<FullFree> {
 
     for(var key in fullTimeTableData[_daySelected]!.courses.keys){
       var value = fullTimeTableData[_daySelected]!.courses[key]!;
-      if(value == "free" && widget.naviKey == 1) {
+      if(value == "free" && widget.naviKey == Screen.fullTimeTable) {
         continue;
-      } else if(value != "free" && widget.naviKey == 5) {
+      } else if(value != "free" && widget.naviKey == Screen.freeTimeTable) {
         continue;
       }
       var inside = key.split("...");
@@ -87,13 +88,13 @@ class _FullFreeTimeTableState extends State<FullFree> {
       keyClasses = keyClasses.substring(0, keyClasses.contains("(") ? keyClasses.indexOf("(") : keyClasses.length);
       var keySlot = inside[1];
       if(showDayData.containsKey(keySlot)){
-        if(widget.naviKey == 5) {
+        if(widget.naviKey == Screen.freeTimeTable) {
           showDayData[keySlot]!.add(keyClasses);
         } else {
           showDayData[keySlot]!.add("$keyClasses...$value");
         }
       } else {
-        if(widget.naviKey == 5){
+        if(widget.naviKey == Screen.freeTimeTable){
           showDayData[keySlot] = [keyClasses];
         } else {
           showDayData[keySlot] = ["$keyClasses...$value"];
@@ -200,7 +201,7 @@ class _FullFreeTimeTableState extends State<FullFree> {
                                   borderRadius: BorderRadius.circular(15),
                                   gradient: Provider.of<ModelTheme>(context).getGradient()
                                 ),
-                                child: widget.naviKey == 1 
+                                child: widget.naviKey == Screen.fullTimeTable 
                                   ? makeFullWidget(showDayData[_allSlot[i]]![j])
                                   : makeFreeWidget(showDayData[_allSlot[i]]![j])
                               ),
@@ -277,7 +278,18 @@ class _FullFreeTimeTableState extends State<FullFree> {
                 _scrollToIndex(days[index], index, daysCtr, 56);
                 _daySelected = days[index];
                 _tileSelected = fullTimeTableData[_daySelected]!.slots[0];
+                var splited = _tileSelected.split("-");
+                var first = splited[0];
+                var end = splited[1];
+                if(!first.contains(":")){
+                  first = "$first:00";
+                }
+                if(!end.contains(":")){
+                  end = "$end:00";
+                }
+                var show = "$first-$end";
                 _pageController.jumpToPage(0);
+                _scrollToIndex(show, 0, ctr, 41);
               });
             },
           ),

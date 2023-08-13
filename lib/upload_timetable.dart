@@ -6,9 +6,11 @@ import 'package:excel/excel.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timetable/choose_courses.dart';
+import 'package:timetable/enum_screen.dart';
 import 'package:timetable/full_free.dart';
 import 'package:timetable/main.dart';
 import 'package:timetable/timetable_data.dart';
@@ -34,7 +36,7 @@ class _UploadTimeTableScreenState extends State<UploadTimeTableScreen> {
         title: const Text("Upload Excel"),
       ),
       body: buildUploadTimeTableScreen(),
-      drawer: const MyNavigationDrawer(3),
+      drawer: MyNavigationDrawer(Screen.uploadExcel, context),
     );
   }
 
@@ -42,20 +44,45 @@ class _UploadTimeTableScreenState extends State<UploadTimeTableScreen> {
     return Center(
       child: ElevatedButton(
         onPressed: () async{
-          FilePickerResult? result = await FilePicker.platform.pickFiles(withData: true, type: FileType.custom, allowedExtensions: ['xlsx']);
+          if(oncecc){
+            var loaded = await ChooseCourse.isLoaded();
+            if(loaded){
+              var temp = await ChooseCourse.getChooseCourse();
+              chooseCourse = temp;
+            }
 
+            loaded = await ChooseCourse.getIsSelectedLoaded();
+            if(loaded){
+              var temp = await ChooseCourse.getSelected();
+              selected = temp;
+            }
+
+            loaded = await ChooseCourse.getIsCurrentLoaded();
+            if(loaded){
+              var temp = await ChooseCourse.getCurrent();
+              current = temp;
+            }
+            oncecc = false;
+          }
+
+          final PermissionStatus status = await Permission.storage.request();
+          if(!status.isGranted) return;
+
+          var result = await FilePicker.platform.pickFiles(withData: true, type: FileType.custom, allowedExtensions: ['xlsx']);
           if(result == null) return;
 
-          final fileBytes = result.files.first.bytes;
-
-          final SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.clear();
+          // setState(() {
+          //   showAlertDialog(context);
+          // });
 
           setState(() {
             showAlertDialog(context);
           });
 
-          await Future.delayed(const Duration(seconds: 2));
+          final fileBytes = result.files.first.bytes;
+
+          final SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.clear();
 
           Map<String, bool> copy = {};
           copy.addAll(current);
@@ -65,12 +92,14 @@ class _UploadTimeTableScreenState extends State<UploadTimeTableScreen> {
           chooseCourse.course.clear();
           fullTimeTableData.clear();
 
-          await read(fileBytes);
+          await Future.delayed(const Duration(milliseconds: 1500));
+
+          await read(fileBytes, copy);
 
           File file = File(result.files.first.path!);
           if(file.existsSync()){
             file.deleteSync();
-          } 
+          }
 
           if(fullTimeTableData.isNotEmpty){
             for(int i = 0; i < chooseCourse.course.length; i++){
@@ -84,34 +113,30 @@ class _UploadTimeTableScreenState extends State<UploadTimeTableScreen> {
                 current[chooseCourse.course.elementAt(i)] = false;
               }
             }
-
-            ChooseCourse.setCurrent(true, current);
-            ChooseCourse.setSelected(true, selected);
+            await ChooseCourse.setCurrent(true, current);
+            await ChooseCourse.setSelected(true, selected);
 
             if(selectionPreferences.isSelection && selected.isNotEmpty){
               for(var key in fullTimeTableData.keys){
                 yourTimeTableData[key] = YourTimeTableData();
                 yourTimeTableData[key]!.makeYourTimeTable(fullTimeTableData[key]!, selected);
               }
-              YourTimeTableData.setYourTimeTableData(true, yourTimeTableData);
+              await YourTimeTableData.setYourTimeTableData(true, yourTimeTableData);
             }
-            
-            setState(() {
-              Provider.of<ModelTheme>(context, listen: false).setDark(Provider.of<ModelTheme>(context, listen: false).isDark);
-              selectionPreferences.setSelection(selectionPreferences.isSelection);
-              Navigator.of(context).pop();
+          }
+
+          setState(() {
+            Provider.of<ModelTheme>(context, listen: false).setDark(Provider.of<ModelTheme>(context, listen: false).isDark);
+            selectionPreferences.setSelection(selectionPreferences.isSelection);
+            Navigator.of(context).pop();
+            if(fullTimeTableData.isNotEmpty){
               showToast(context, "Data Extracted Successfully");
               loaded = true;
-            });
-          } else {
-            setState(() {
-              Provider.of<ModelTheme>(context, listen: false).setDark(Provider.of<ModelTheme>(context, listen: false).isDark);
-              selectionPreferences.setSelection(selectionPreferences.isSelection);
-              Navigator.of(context).pop();
+            } else {
               showToast(context, "A problem occurred while extracting data. Could not extract.");
               loaded = false;
-            });
-          }
+            }
+          });
         },
         child: const Text("Upload File"),
       ),
@@ -136,11 +161,28 @@ void showToast(BuildContext context, String msg) {
   );
 }
 
-void showAlertDialog(BuildContext context) {
+void showDoneDialog(BuildContext context, String msg){
   showDialog(  
     context: context,
-    barrierDismissible: false,
     builder: (BuildContext context) {  
+      return AlertDialog(  
+        content: Text(msg),
+        actions: [
+          ElevatedButton(
+            child: const Text("Okay"),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      );  
+    },  
+  );  
+}
+
+void showAlertDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
       return const AlertDialog(  
         content: Text("Please wait a moment while it extracts data..."),
       );  
@@ -148,12 +190,11 @@ void showAlertDialog(BuildContext context) {
   );  
 }
 
-Future read(Uint8List? fileBytes) async {
+Future read(Uint8List? fileBytes, Map<String, bool> copy) async {
   if(fileBytes == null) return;
 
   var excel = Excel.decodeBytes(fileBytes);
   var days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
-
 
   for (var table in excel.tables.keys) {
 
@@ -207,7 +248,6 @@ Future read(Uint8List? fileBytes) async {
       }
     }
   }
-
   FullTimeTableData.setLoaded(true, fullTimeTableData);
-  ChooseCourse.setLoaded(true, chooseCourse);
+  await ChooseCourse.setLoaded(true, chooseCourse);
 }

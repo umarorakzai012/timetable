@@ -21,9 +21,9 @@ class ModelTheme extends ChangeNotifier {
     getPreferences();
   }
   
-  void setDark(bool value) {
+  Future<void> setDark(bool value) async {
     _isDark = value;
-    _preferences.setTheme(value);
+    await _preferences.setTheme(value);
     notifyListeners();
   }
 

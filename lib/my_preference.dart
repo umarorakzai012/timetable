@@ -5,7 +5,7 @@ class MyThemePreferences {
 
   setTheme(bool value) async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-    sharedPreferences.setBool(themeKey, value);
+    await sharedPreferences.setBool(themeKey, value);
   }
 
   getTheme() async {
@@ -22,9 +22,9 @@ class MySelectionPreferences {
     _getSelection();
   }
 
-  void setSelection(bool value) async {
+  Future<void> setSelection(bool value) async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-    sharedPreferences.setBool(selectionKey, value);
+    await sharedPreferences.setBool(selectionKey, value);
     isSelection = value;
   }
 
