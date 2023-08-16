@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:timetable/enum_screen.dart';
 import 'package:timetable/main.dart';
 import 'package:timetable/navigation_drawer.dart';
+import 'package:timetable/your_timetable.dart';
 
 import 'model_theme.dart';
 
@@ -14,39 +15,53 @@ class SettingScreen extends StatefulWidget{
 }
 
 class _SettingScreenState extends State<SettingScreen> {
+  
+  Future<bool> pushReplacementToYourTimeTable(){
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const YourTimeTable(),
+        maintainState: false,
+      ),
+    );
+    return Future(() => true);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Setting"),
+    return WillPopScope(
+      onWillPop: pushReplacementToYourTimeTable,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Setting"),
+        ),
+        body: ListView(
+          children: <Widget>[
+            SwitchListTile(
+              title: const Text("Theme"),
+              secondary: Icon(Provider.of<ModelTheme>(context).isDark ? Icons.dark_mode : Icons.light_mode),
+              subtitle: const Text("Sets the theme of the app."),
+              value: Provider.of<ModelTheme>(context).isDark,
+              onChanged: (value) {
+                Provider.of<ModelTheme>(context, listen: false).setDark(value);
+              },
+            ),
+            const SizedBox(height: 20,),
+            SwitchListTile(
+              title: const Text("Keep Selection"),
+              secondary: const Icon(Icons.autorenew),
+              subtitle: const Text("Keeps the course list selection across different uploads."),
+              isThreeLine: true,
+              value: selectionPreferences.isSelection,
+              onChanged: (value) {
+                setState(() {
+                  selectionPreferences.setSelection(value);
+                });
+              },
+            )
+          ],
+        ),
+        drawer: MyNavigationDrawer(Screen.settings, context),
       ),
-      body: ListView(
-        children: <Widget>[
-          SwitchListTile(
-            title: const Text("Theme"),
-            secondary: Icon(Provider.of<ModelTheme>(context).isDark ? Icons.dark_mode : Icons.light_mode),
-            subtitle: const Text("Sets the theme of the app."),
-            value: Provider.of<ModelTheme>(context).isDark,
-            onChanged: (value) {
-              Provider.of<ModelTheme>(context, listen: false).setDark(value);
-            },
-          ),
-          const SizedBox(height: 20,),
-          SwitchListTile(
-            title: const Text("Keep Selection"),
-            secondary: const Icon(Icons.autorenew),
-            subtitle: const Text("Keeps the course list selection across different uploads."),
-            isThreeLine: true,
-            value: selectionPreferences.isSelection,
-            onChanged: (value) {
-              setState(() {
-                selectionPreferences.setSelection(value);
-              });
-            },
-          )
-        ],
-      ),
-      drawer: MyNavigationDrawer(Screen.settings, context),
     );
   }
 }

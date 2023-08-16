@@ -31,13 +31,26 @@ class _UploadTimeTableScreenState extends State<UploadTimeTableScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Upload Excel"),
+    return WillPopScope(
+      onWillPop: pushReplacementToYourTimeTable,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Upload Excel"),
+        ),
+        body: buildUploadTimeTableScreen(),
+        drawer: MyNavigationDrawer(Screen.uploadExcel, context),
       ),
-      body: buildUploadTimeTableScreen(),
-      drawer: MyNavigationDrawer(Screen.uploadExcel, context),
     );
+  }
+
+  Future<bool> pushReplacementToYourTimeTable(){
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const YourTimeTable(),
+        maintainState: false,
+      ),
+    );
+    return Future(() => true);
   }
 
   Widget buildUploadTimeTableScreen(){
@@ -49,12 +62,6 @@ class _UploadTimeTableScreenState extends State<UploadTimeTableScreen> {
             if(loaded){
               var temp = await ChooseCourse.getChooseCourse();
               chooseCourse = temp;
-            }
-
-            loaded = await ChooseCourse.getIsSelectedLoaded();
-            if(loaded){
-              var temp = await ChooseCourse.getSelected();
-              selected = temp;
             }
 
             loaded = await ChooseCourse.getIsCurrentLoaded();
@@ -71,30 +78,27 @@ class _UploadTimeTableScreenState extends State<UploadTimeTableScreen> {
           var result = await FilePicker.platform.pickFiles(withData: true, type: FileType.custom, allowedExtensions: ['xlsx']);
           if(result == null) return;
 
-          // setState(() {
-          //   showAlertDialog(context);
-          // });
+          final SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.clear();
 
           setState(() {
             showAlertDialog(context);
+            Provider.of<ModelTheme>(context, listen: false).setDark(Provider.of<ModelTheme>(context, listen: false).isDark);
+            selectionPreferences.setSelection(selectionPreferences.isSelection);
           });
 
           final fileBytes = result.files.first.bytes;
 
-          final SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.clear();
-
-          Map<String, bool> copy = {};
+          Set<String> copy = {};
           copy.addAll(current);
           current.clear();
-          selected.clear();
           yourTimeTableData.clear();
           chooseCourse.course.clear();
           fullTimeTableData.clear();
 
           await Future.delayed(const Duration(milliseconds: 1500));
 
-          await read(fileBytes, copy);
+          await read(fileBytes);
 
           File file = File(result.files.first.path!);
           if(file.existsSync()){
@@ -102,32 +106,36 @@ class _UploadTimeTableScreenState extends State<UploadTimeTableScreen> {
           }
 
           if(fullTimeTableData.isNotEmpty){
-            for(int i = 0; i < chooseCourse.course.length; i++){
-              if(copy.containsKey(chooseCourse.course.elementAt(i)) && selectionPreferences.isSelection){
-                current[chooseCourse.course.elementAt(i)] = copy[chooseCourse.course.elementAt(i)]!;
-                if(current[chooseCourse.course.elementAt(i)]!){
-                  selected.add(chooseCourse.course.elementAt(i));
+            // for(int i = 0; i < chooseCourse.course.length; i++){
+            //   if(copy.contains(chooseCourse.course.elementAt(i)) && selectionPreferences.isSelection){
+            //     current[chooseCourse.course.elementAt(i)] = copy[chooseCourse.course.elementAt(i)]!;
+            //     if(current[chooseCourse.course.elementAt(i)]!){
+            //       selected.add(chooseCourse.course.elementAt(i));
+            //     }
+            //   } 
+            //   else {
+            //     current[chooseCourse.course.elementAt(i)] = false;
+            //   }
+            // }
+            if(selectionPreferences.isSelection){
+              for (var i = 0; i < chooseCourse.course.length; i++) {
+                if(copy.contains(chooseCourse.course.elementAt(i))){
+                  current.add(chooseCourse.course.elementAt(i));
                 }
-              } 
-              else {
-                current[chooseCourse.course.elementAt(i)] = false;
               }
             }
             await ChooseCourse.setCurrent(true, current);
-            await ChooseCourse.setSelected(true, selected);
 
-            if(selectionPreferences.isSelection && selected.isNotEmpty){
+            if(selectionPreferences.isSelection && current.isNotEmpty){
               for(var key in fullTimeTableData.keys){
                 yourTimeTableData[key] = YourTimeTableData();
-                yourTimeTableData[key]!.makeYourTimeTable(fullTimeTableData[key]!, selected);
+                yourTimeTableData[key]!.makeYourTimeTable(fullTimeTableData[key]!, current);
               }
               await YourTimeTableData.setYourTimeTableData(true, yourTimeTableData);
             }
           }
 
           setState(() {
-            Provider.of<ModelTheme>(context, listen: false).setDark(Provider.of<ModelTheme>(context, listen: false).isDark);
-            selectionPreferences.setSelection(selectionPreferences.isSelection);
             Navigator.of(context).pop();
             if(fullTimeTableData.isNotEmpty){
               showToast(context, "Data Extracted Successfully");
@@ -190,7 +198,7 @@ void showAlertDialog(BuildContext context) {
   );  
 }
 
-Future read(Uint8List? fileBytes, Map<String, bool> copy) async {
+Future read(Uint8List? fileBytes) async {
   if(fileBytes == null) return;
 
   var excel = Excel.decodeBytes(fileBytes);

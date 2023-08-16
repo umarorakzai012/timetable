@@ -84,7 +84,7 @@ class YourTimeTableData {
   }
   
 
-  void makeYourTimeTable(FullTimeTableData fttd, List<String> selectedCourses){
+  void makeYourTimeTable(FullTimeTableData fttd, Set<String> selectedCourses){
     for(var key in fttd.courses.keys){
       var value = fttd.courses[key]!;
       if(selectedCourses.contains(value)){
@@ -114,7 +114,6 @@ class ChooseCourse {
 
   static Future<bool> isLoaded() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    // return false;
     return prefs.getBool(_loadedKey) == null ? false : prefs.getBool(_loadedKey)!;
   }
 
@@ -124,32 +123,10 @@ class ChooseCourse {
     await prefs.setStringList("cccourse", cc.course.toList());
   }
 
-  static Future<void> setSelected(bool isLoaded, List<String> selected) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("selected is loaded", isLoaded);
-    await prefs.setStringList("selected", selected);
-  }
-
-  static Future<bool> getIsSelectedLoaded() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    var loadeded = prefs.getBool("selected is loaded");
-    return loadeded ?? false;
-  }
-
-  static Future<List<String>> getSelected() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList("selected")!;  
-  }
-
-  static Future<void> setCurrent(bool isLoaded, Map<String, bool> currents) async {
+  static Future<void> setCurrent(bool isLoaded, Set<String> currents) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool("current is loaded", isLoaded);
-    await prefs.setStringList("current keys", currents.keys.toList());
-    var temp = currents.values.map((e) => e.toString()).toList();
-    await prefs.setStringList("current value as string", temp);
-    // for(var key in currents.keys){
-    //   await prefs.setBool("current $key value", currents[key]!);
-    // }
+    await prefs.setStringList("current keys", currents.toList());
   }
 
   static Future<bool> getIsCurrentLoaded() async {
@@ -158,18 +135,9 @@ class ChooseCourse {
     return loadeded ?? false;
   }
 
-  static Future<Map<String, bool>> getCurrent() async {
+  static Future<Set<String>> getCurrent() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    Map<String, bool> currents = {};
-    var keys = prefs.getStringList("current keys")!;
-    var temp = prefs.getStringList("current value as string")!.map((e) => e.compareTo("true") == 0).toList();
-
-    int i = 0;
-    for(var key in keys){
-      currents[key] = temp[i++];
-    }
-
-    return currents;
+    return prefs.getStringList("current keys")!.toSet();
   }  
 
   static Future<ChooseCourse> getChooseCourse() async {

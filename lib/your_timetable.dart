@@ -9,7 +9,6 @@ import 'package:install_plugin/install_plugin.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:timetable/choose_courses.dart';
 import 'package:timetable/enum_screen.dart';
 import 'package:timetable/full_free.dart';
@@ -34,13 +33,21 @@ Map<String, YourTimeTableData> yourTimeTableData = {};
 bool _onceyttd = true;
 
 class _YourTimeTableState extends State<YourTimeTable> {
-  ItemScrollController ctr = ItemScrollController();
+  ScrollController scr = ScrollController();
+
   final _progressDialogKey = GlobalKey<ProgressDialogState>();
   String _daySelectedYourTimeTable = "";
+  PageController pageController = PageController();
   
-  List<String> readmeContent = [];
+  List<String> readmeContent = [], days = [];
   double _progressValue = 0;
   bool firstTime = true;
+
+  @override
+  void dispose() {
+    super.dispose();
+    pageController.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +62,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
       ),
       body: loaded
           ? yourTimeTableData.isEmpty ? const Center(child: Text("Please Select Course(s)"),) : buildYourTimeTableScreen() 
-          : const Center(child: Text("Please Upload An Excel File First")),
+          : const Center(child: Text("Please Upload An Excel File")),
       drawer : MyNavigationDrawer(Screen.yourTimeTable, context), 
     );
   }
@@ -77,38 +84,47 @@ class _YourTimeTableState extends State<YourTimeTable> {
     _onceyttd = false;
   }
 
+  double calculatePixel(String value) {
+    double size = 15;
+    if(MediaQuery.of(context).size.width < 350){
+      size = 11;
+    }
+    TextStyle textStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: size);
+    final Size txtSize = textSize(value, textStyle);
+    return (txtSize.width + 40);
+  }
+
   Widget buildYourTimeTableScreen() {
-    List<String> days = yourTimeTableData.keys.toList();
+    days = yourTimeTableData.keys.toList();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      int value = days.indexOf(_daySelectedYourTimeTable);
-      if(value == -1) return;
-      double size = 15;
-      if(MediaQuery.of(context).size.width < 350){
-        size = 11;
+      int index = days.indexOf(_daySelectedYourTimeTable);
+      if(index == -1) return;
+      double sum = 0;
+      for (var i = 0; i < index; i++) {
+        sum += calculatePixel(days[i]);
+        // var offset = (txtSize.width + 40) / MediaQuery.of(context).size.width;
       }
-      TextStyle textStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: size);
-      final Size txtSize = textSize(days[value], textStyle);
-      var offset = (txtSize.width + 40) / MediaQuery.of(context).size.width;
+      sum -= MediaQuery.of(context).size.width / 2 - (calculatePixel(days[index]) / 2);
+      // print(sum);
+      // var offset = calculatePixel(days[index]) / MediaQuery.of(context).size.width;
+      if(sum < 0) sum = 0;
       if(firstTime) {
-        firstTime = false;
-        ctr.jumpTo(index: value);
+        scr.jumpTo(sum);
+        // ctr.jumpTo(index: index, alignment: 0.5 - offset / 2);
+        pageController.jumpToPage(index);
       } else {
-        ctr.scrollTo(
-          index: value,
-          duration: const Duration(milliseconds: 375),
-          alignment: 0.5 - offset / 2
-        );
+        scr.animateTo(sum, duration: const Duration(milliseconds: 375), curve: Curves.linear);
+        // ctr.scrollTo(
+        //   index: index,
+        //   duration: const Duration(milliseconds: 375),
+        //   alignment: 0.5 - (offset) / 2
+        // );
       }
     });
     List<List<String>> slots = [], classes = [], value = [];
-    PageController pageController;
     if(_daySelectedYourTimeTable.compareTo("") == 0){
       int index = (DateTime.now().weekday - 1) >= days.length ? 0 : DateTime.now().weekday - 1;
-      pageController = PageController(initialPage: index);
       _daySelectedYourTimeTable = days[index];
-    } else {
-      int index = days.indexOf(_daySelectedYourTimeTable);
-      pageController = PageController(initialPage: index);
     }
     for(int i = 0; i < days.length; i++){
       Map<int, int> sorting = {};
@@ -170,8 +186,10 @@ class _YourTimeTableState extends State<YourTimeTable> {
         Container(
           margin: const EdgeInsets.only(top: 8, right: 3, left: 3),
           height: 50,
-          child: ScrollablePositionedList.builder(
-            itemScrollController: ctr,
+          // child: ScrollablePositionedList.builder(
+          child: ListView.builder(
+            // itemScrollController: ctr,
+            controller: scr,
             scrollDirection: Axis.horizontal,
             itemCount: yourTimeTableData.keys.length,
             itemBuilder: (context, index) {
@@ -196,8 +214,10 @@ class _YourTimeTableState extends State<YourTimeTable> {
                   ),
                   onTap: () {
                     if(_daySelectedYourTimeTable.compareTo(days[index]) == 0) return;
-                    _daySelectedYourTimeTable = days[index];
-                    pageController.jumpToPage(index);
+                    setState(() {
+                      _daySelectedYourTimeTable = days[index];
+                      pageController.jumpToPage(index);
+                    });
                   },
                 ),
               );
@@ -285,6 +305,11 @@ class _YourTimeTableState extends State<YourTimeTable> {
               );
             },
             onPageChanged: (value) {
+              if(firstTime){
+                firstTime = false;
+                return;
+              }
+              if(_daySelectedYourTimeTable.compareTo(days[value]) == 0) return;
               setState(() {
                 _daySelectedYourTimeTable = days[value];
               });
@@ -300,6 +325,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
       slot = "$slot:00";
     }
     slot = slot.trim();
+    slot = makingOfLengthFive(slot);
     int indexOf = slot.indexOf(":");
     var subs = slot.substring(0, indexOf);
     if(int.parse(subs) >= 7 && int.parse(subs) < 12){
@@ -310,6 +336,17 @@ class _YourTimeTableState extends State<YourTimeTable> {
     slot.replaceAll("  ", " ");
 
     return slot;
+  }
+
+  String makingOfLengthFive(String toFormat){
+    if(toFormat.length == 5) return toFormat;
+
+    var split = toFormat.split(":");
+    var first = split[0];
+    var end = split[1];
+    if(first.length == 1) first = "0$first";
+    if(end.length == 1) end = "0$end";
+    return "$first:$end";
   }
 
   Size textSize(String text, TextStyle style) {

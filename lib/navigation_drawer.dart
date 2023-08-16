@@ -50,14 +50,10 @@ class MyNavigationDrawer extends StatelessWidget {
             leading: const Icon(Icons.timeline),
             selected: _currentScreen == Screen.yourTimeTable,
             onTap: () {
-              if(_currentScreen == Screen.yourTimeTable){
-                Navigator.of(context).pushReplacement(MaterialPageRoute(
-                  builder: (context) => const YourTimeTable(),
-                ));
-              } else {
-                Navigator.of(context).pop();
-                Navigator.of(context).pop();
-              }
+              Navigator.of(context).pushReplacement(MaterialPageRoute(
+                builder: (context) => const YourTimeTable(),
+                maintainState: false,
+              ));
             },
           ),
         ),
@@ -73,16 +69,10 @@ class MyNavigationDrawer extends StatelessWidget {
             leading: const Icon(Icons.view_timeline),
             selected: _currentScreen == Screen.fullTimeTable,
             onTap: () {
-              if(_currentScreen == Screen.yourTimeTable){
-                Navigator.of(context).pop();
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => const FullFree(Screen.fullTimeTable, "Full TimeTable", "Free Slot"),
-                ));
-              } else {
-                Navigator.of(context).pushReplacement(MaterialPageRoute(
-                  builder: (context) => const FullFree(Screen.fullTimeTable, "Full TimeTable", "Free Slot"),
-                ));
-              }
+              Navigator.of(context).pushReplacement(MaterialPageRoute(
+                builder: (context) => const FullFree(Screen.fullTimeTable, "Full TimeTable", "Free Slot"),
+                maintainState: false,
+              ));
             },
           ),
         ),
@@ -98,16 +88,10 @@ class MyNavigationDrawer extends StatelessWidget {
             leading: const Icon(Icons.free_cancellation),
             selected: _currentScreen == Screen.freeTimeTable,
             onTap: () {
-              if(_currentScreen == Screen.yourTimeTable){
-                Navigator.of(context).pop();
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => const FullFree(Screen.freeTimeTable, "Full TimeTable", "Free Slot"),
-                ));
-              } else {
-                Navigator.of(context).pushReplacement(MaterialPageRoute(
-                  builder: (context) => const FullFree(Screen.freeTimeTable, "Full TimeTable", "Free Slot"),
-                ));
-              }
+              Navigator.of(context).pushReplacement(MaterialPageRoute(
+                builder: (context) => const FullFree(Screen.freeTimeTable, "Full TimeTable", "Free Slot"),
+                maintainState: false,
+              ));
             },
           ),
         ),
@@ -123,16 +107,10 @@ class MyNavigationDrawer extends StatelessWidget {
             leading: const Icon(Icons.check_box),
             selected: _currentScreen == Screen.courseList,
             onTap: () {
-              if(_currentScreen == Screen.yourTimeTable){
-                Navigator.of(context).pop();
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => const ChooseCourseScreen(),
-                ));
-              } else {
-                Navigator.of(context).pushReplacement(MaterialPageRoute(
-                  builder: (context) => const ChooseCourseScreen(),
-                ));
-              }
+              Navigator.of(context).pushReplacement(MaterialPageRoute(
+                builder: (context) => const ChooseCourseScreen(),
+                maintainState: false,
+              ));
             },
           ),
         ),
@@ -148,16 +126,10 @@ class MyNavigationDrawer extends StatelessWidget {
             leading: const Icon(Icons.file_upload),
             selected: _currentScreen == Screen.uploadExcel,
             onTap: () {
-              if(_currentScreen == Screen.yourTimeTable){
-                Navigator.of(context).pop();
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => const UploadTimeTableScreen(),
-                ));
-              } else {
-                Navigator.of(context).pushReplacement(MaterialPageRoute(
-                  builder: (context) => const UploadTimeTableScreen(),
-                ));
-              }
+              Navigator.of(context).pushReplacement(MaterialPageRoute(
+                builder: (context) => const UploadTimeTableScreen(),
+                maintainState: false,
+              ));
             },
           ),
         ),
@@ -173,16 +145,10 @@ class MyNavigationDrawer extends StatelessWidget {
             leading: const Icon(Icons.settings),
             selected: _currentScreen == Screen.settings,
             onTap: () {
-              if(_currentScreen == Screen.yourTimeTable){
-                Navigator.of(context).pop();
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => const SettingScreen(),
-                ));
-              } else {
-                Navigator.of(context).pushReplacement(MaterialPageRoute(
-                  builder: (context) => const SettingScreen(),
-                ));
-              }
+              Navigator.of(context).pushReplacement(MaterialPageRoute(
+                builder: (context) => const SettingScreen(),
+                maintainState: false,
+              ));
             },
           ),
         ),
