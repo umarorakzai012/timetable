@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:install_plugin/install_plugin.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -29,25 +28,20 @@ class YourTimeTable extends StatefulWidget {
 }
 
 Map<String, YourTimeTableData> yourTimeTableData = {};
+int _length = 0;
 
 bool _onceyttd = true;
 
 class _YourTimeTableState extends State<YourTimeTable> {
-  ScrollController scr = ScrollController();
-
   final _progressDialogKey = GlobalKey<ProgressDialogState>();
+  final GlobalKey<AnimatedListState> _animatedListStateKey = GlobalKey<AnimatedListState>();
+  final GlobalKey<__MyTextState> _myTextKey = GlobalKey<__MyTextState>();
   String _daySelectedYourTimeTable = "";
-  PageController pageController = PageController();
-  
+  List<Container> containers = [];
+
   List<String> readmeContent = [], days = [];
   double _progressValue = 0;
   bool firstTime = true;
-
-  @override
-  void dispose() {
-    super.dispose();
-    pageController.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,25 +57,9 @@ class _YourTimeTableState extends State<YourTimeTable> {
       body: loaded
           ? yourTimeTableData.isEmpty ? const Center(child: Text("Please Select Course(s)"),) : buildYourTimeTableScreen() 
           : const Center(child: Text("Please Upload An Excel File")),
-      drawer : MyNavigationDrawer(Screen.yourTimeTable, context), 
+      drawer : MyNavigationDrawer(Screen.yourTimeTable, context),
+      floatingActionButton: _MyText(key: _myTextKey, length: 0),
     );
-  }
-
-  Future<void> load() async {
-    loaded = await FullTimeTableData.isLoaded() && await ChooseCourse.isLoaded();
-    if(loaded){
-      var temp = await FullTimeTableData.getFullTimeTableData();
-      fullTimeTableData = temp;
-    }
-    var load = await YourTimeTableData.isLoadedYourTimeTableData();
-    if(load){
-      var temp = await YourTimeTableData.getYourTimeTableData();
-      setState(() {
-        yourTimeTableData = temp;
-      });
-    }
-    FlutterNativeSplash.remove();
-    _onceyttd = false;
   }
 
   double calculatePixel(String value) {
@@ -96,32 +74,30 @@ class _YourTimeTableState extends State<YourTimeTable> {
 
   Widget buildYourTimeTableScreen() {
     days = yourTimeTableData.keys.toList();
+    List<List<String>> slots = [], classes = [], value = [];
+
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       int index = days.indexOf(_daySelectedYourTimeTable);
       if(index == -1) return;
-      double sum = 0;
-      for (var i = 0; i < index; i++) {
-        sum += calculatePixel(days[i]);
-        // var offset = (txtSize.width + 40) / MediaQuery.of(context).size.width;
+
+      Future ft = Future(() {});
+
+      containers.clear();
+      _animatedListStateKey.currentState!.removeAllItems((context, animation) => const Text(""));
+
+      _myTextKey.currentState!.setLength(slots[index].length);
+      for (var i = 0; i < slots[index].length; i++) {
+        ft = ft.then((_) {
+          return Future.delayed(const Duration(milliseconds: 100), (){
+            String slotString = slots[index][i], classesString = classes[index][i], valueString = value[index][i];
+            containers.add(makeContainer(slotString, classesString, valueString));
+            _animatedListStateKey.currentState!.insertItem(containers.length - 1);
+          });
+        });
       }
-      sum -= MediaQuery.of(context).size.width / 2 - (calculatePixel(days[index]) / 2);
-      // print(sum);
-      // var offset = calculatePixel(days[index]) / MediaQuery.of(context).size.width;
-      if(sum < 0) sum = 0;
-      if(firstTime) {
-        scr.jumpTo(sum);
-        // ctr.jumpTo(index: index, alignment: 0.5 - offset / 2);
-        pageController.jumpToPage(index);
-      } else {
-        scr.animateTo(sum, duration: const Duration(milliseconds: 375), curve: Curves.linear);
-        // ctr.scrollTo(
-        //   index: index,
-        //   duration: const Duration(milliseconds: 375),
-        //   alignment: 0.5 - (offset) / 2
-        // );
-      }
+        
     });
-    List<List<String>> slots = [], classes = [], value = [];
+
     if(_daySelectedYourTimeTable.compareTo("") == 0){
       int index = (DateTime.now().weekday - 1) >= days.length ? 0 : DateTime.now().weekday - 1;
       _daySelectedYourTimeTable = days[index];
@@ -181,140 +157,30 @@ class _YourTimeTableState extends State<YourTimeTable> {
         }
       }
     }
-    return Stack(
-      children: <Widget>[
-        Container(
-          margin: const EdgeInsets.only(top: 8, right: 3, left: 3),
-          height: 40,
-          child: ListView.builder(
-            controller: scr,
-            scrollDirection: Axis.horizontal,
-            itemCount: yourTimeTableData.keys.length,
-            itemBuilder: (context, index) {
-              double size = 15;
-              if(MediaQuery.of(context).size.width < 350){
-                size = 11;
-              }
-              TextStyle textStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: size);
-              final Size txtSize = textSize(days[index], textStyle);
-              bool selected = _daySelectedYourTimeTable.compareTo(days[index]) == 0;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 375),
-                width: txtSize.width + 40,
-                decoration: BoxDecoration(
-                  gradient: selected ? Provider.of<ModelTheme>(context).getGradient() : null,
-                  borderRadius: selected ? BorderRadius.circular(25) : null,
-                ),
-                child: ListTile(
-                  title: Container(
-                    margin: const EdgeInsets.only(bottom: 15),
-                    child: Center(child: makeYourText(days[index]))
-                  ),
-                  onTap: () {
-                    if(_daySelectedYourTimeTable.compareTo(days[index]) == 0) return;
-                    setState(() {
-                      _daySelectedYourTimeTable = days[index];
-                      pageController.jumpToPage(index);
-                    });
-                  },
-                ),
-              );
-            },
-          ),
+    // Tween<Offset> tween = Tween<Offset>(begin: const Offset(0, -2), end: const Offset(0, 0));
+    Tween<double> tween = Tween<double>(begin: 0, end: 1);
+    int indexOfCurrentDaySelected = days.indexOf(_daySelectedYourTimeTable);
+    return Container(
+      margin: const EdgeInsets.only(top: 20),
+      width: MediaQuery.of(context).size.width,
+      child: value[indexOfCurrentDaySelected].isEmpty ? 
+      const Center(
+        child: Text(
+          "Free Day",
+          style: TextStyle(fontSize: 30),
         ),
-        Container(
-          margin: const EdgeInsets.only(top: 50),
-          width: MediaQuery.of(context).size.width,
-          child: PageView.builder(
-            controller: pageController,
-            itemCount: days.length,
-            itemBuilder: (context, i){
-              if(value[i].isEmpty){
-                return const Center(
-                  child: Text(
-                    "Free Day",
-                    style: TextStyle(fontSize: 30),
-                  ),
-                );
-              }
-              return AnimationLimiter(
-                child: ListView.builder(
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: value[i].length,
-                  itemBuilder: (context, j) {
-                    String top = slots[i][j].split("-")[0];
-                    String bottom = slots[i][j].split("-")[1];
-                    top = formattingSlots(top);
-                    bottom = formattingSlots(bottom);
-                    return AnimationConfiguration.staggeredList(
-                      position: j,
-                      duration: const Duration(milliseconds: 600),
-                      child: SlideAnimation(
-                        verticalOffset: 50.0,
-                        child: FadeInAnimation(
-                          child: Container(
-                            height: 85,
-                            margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(15),
-                              gradient: Provider.of<ModelTheme>(context).getGradient(),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: <Widget>[
-                                SizedBox(
-                                  width: 80,
-                                  child: Center(child: makeYourText(classes[i][j]))
-                                ),
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if(!value[i][j].contains("\n"))...[
-                                      SizedBox(
-                                        width: MediaQuery.of(context).size.width - 160,
-                                        child: makeYourText(value[i][j]),
-                                      ),
-                                    ]
-                                    else...[
-                                      makeYourText(value[i][j].split("\n")[0]),
-                                      makeYourText(value[i][j].split("\n")[1]),
-                                    ]
-                                  ],
-                                ),
-                                SizedBox(
-                                  width: 80,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      makeYourText(top),
-                                      makeYourText("To"),
-                                      makeYourText(bottom),
-                                    ],
-                                  )
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-            onPageChanged: (value) {
-              if(firstTime){
-                firstTime = false;
-                return;
-              }
-              if(_daySelectedYourTimeTable.compareTo(days[value]) == 0) return;
-              setState(() {
-                _daySelectedYourTimeTable = days[value];
-              });
-            },
-          ),
-        )
-      ],
+      ) :
+      AnimatedList(
+        key: _animatedListStateKey,
+        physics: const BouncingScrollPhysics(),
+        initialItemCount: containers.length,
+        itemBuilder: (context, j, animation) {
+          return FadeTransition(
+            opacity: animation.drive(tween),
+            child: containers[j],
+          );
+        },
+      )
     );
   }
 
@@ -547,5 +413,95 @@ class _YourTimeTableState extends State<YourTimeTable> {
     } catch (e) {
       // Error in getting access to the file.
     }
+  }
+
+  Container makeContainer(String slot, String classes, String value){
+    String top = slot.split("-")[0];
+    String bottom = slot.split("-")[1];
+    top = formattingSlots(top);
+    bottom = formattingSlots(bottom);
+    return Container(
+      height: 85,
+      margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        gradient: Provider.of<ModelTheme>(context, listen: false).getGradient(),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          SizedBox(
+            width: 80,
+            child: Center(child: makeYourText(classes))
+          ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if(!value.contains("\n"))...[
+                SizedBox(
+                  width: MediaQuery.of(context).size.width - 160,
+                  child: makeYourText(value),
+                ),
+              ]
+              else...[
+                makeYourText(value.split("\n")[0]),
+                makeYourText(value.split("\n")[1]),
+              ]
+            ],
+          ),
+          SizedBox(
+            width: 80,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                makeYourText(top),
+                makeYourText("To"),
+                makeYourText(bottom),
+              ],
+            )
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> load() async {
+    loaded = await FullTimeTableData.isLoaded() && await ChooseCourse.isLoaded();
+    if(loaded){
+      var temp = await FullTimeTableData.getFullTimeTableData();
+      fullTimeTableData = temp;
+    }
+    var load = await YourTimeTableData.isLoadedYourTimeTableData();
+    if(load){
+      var temp = await YourTimeTableData.getYourTimeTableData();
+      setState(() {
+        yourTimeTableData = temp;
+      });
+    }
+    FlutterNativeSplash.remove();
+    _onceyttd = false;
+  }
+}
+
+class _MyText extends StatefulWidget {
+  final int length;
+  const _MyText({super.key, required this.length});
+
+  @override
+  State<_MyText> createState() => __MyTextState();
+}
+
+class __MyTextState extends State<_MyText> {
+  int _length = 0;
+
+  void setLength(int len){
+    setState(() {
+      _length = len;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text("length $_length");
   }
 }

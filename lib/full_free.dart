@@ -44,10 +44,6 @@ class _FullFreeTimeTableState extends State<FullFree> {
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       _myScrollToIndex(_daySelected, days, daysCtr, 40, firstTime, false);
       _myScrollToIndex(_tileSelected, _allSlot, ctr, 35, firstTime, true);
-      // print(_tileSelected); -----------> Wrong here
-      // _scrollToIndex(_daySelected, days.indexOf(_daySelected), daysCtr, 56, firstTime);
-      // _scrollToIndex(show, _allSlot.indexOf(_tileSelected), ctr, 41, _dayChanged);
-      // print("$_tileSelected");
       if(_allSlot.indexOf(_tileSelected) == _pageController.page) _dayChanged = false;
       if(_dayChanged) _pageController.jumpToPage(_allSlot.indexOf(_tileSelected));
       firstTime = false;
@@ -212,9 +208,6 @@ class _FullFreeTimeTableState extends State<FullFree> {
               var show = formattingSlots(_allSlot[index]);
               final Size txtSize = _textSize(show, const TextStyle(fontWeight: FontWeight.bold, fontSize: 15,));
               return AnimatedContainer(
-                // margin: const EdgeInsets.symmetric(horizontal: 3),
-                // margin: const EdgeInsets.only(right: 3, left: 3, top: 5),
-                // margin: const EdgeInsets.only(top: 3),
                 curve: Curves.linear,
                 duration: const Duration(milliseconds: 375),
                 width: txtSize.width + 35,
@@ -231,8 +224,6 @@ class _FullFreeTimeTableState extends State<FullFree> {
                     if(_tileSelected.compareTo(_allSlot[index]) == 0) return;
                     setState(() {
                       _tileSelected = _allSlot[index];
-                      // print(_tileSelected); ----------> Correct Here
-                      // shouldJumpTo = true;
                       fromOnTap = true;
                       _pageController.jumpToPage(index);
                     });
