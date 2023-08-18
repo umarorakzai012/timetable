@@ -185,10 +185,8 @@ class _YourTimeTableState extends State<YourTimeTable> {
       children: <Widget>[
         Container(
           margin: const EdgeInsets.only(top: 8, right: 3, left: 3),
-          height: 50,
-          // child: ScrollablePositionedList.builder(
+          height: 40,
           child: ListView.builder(
-            // itemScrollController: ctr,
             controller: scr,
             scrollDirection: Axis.horizontal,
             itemCount: yourTimeTableData.keys.length,
@@ -209,7 +207,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
                 ),
                 child: ListTile(
                   title: Container(
-                    margin: const EdgeInsets.only(bottom: 10),
+                    margin: const EdgeInsets.only(bottom: 15),
                     child: Center(child: makeYourText(days[index]))
                   ),
                   onTap: () {
@@ -225,7 +223,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
           ),
         ),
         Container(
-          margin: const EdgeInsets.only(top: 60),
+          margin: const EdgeInsets.only(top: 50),
           width: MediaQuery.of(context).size.width,
           child: PageView.builder(
             controller: pageController,
@@ -250,7 +248,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
                     bottom = formattingSlots(bottom);
                     return AnimationConfiguration.staggeredList(
                       position: j,
-                      duration: const Duration(milliseconds: 375),
+                      duration: const Duration(milliseconds: 600),
                       child: SlideAnimation(
                         verticalOffset: 50.0,
                         child: FadeInAnimation(
@@ -265,7 +263,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: <Widget>[
                                 SizedBox(
-                                  width: 90,
+                                  width: 80,
                                   child: Center(child: makeYourText(classes[i][j]))
                                 ),
                                 Column(
@@ -273,7 +271,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
                                   children: [
                                     if(!value[i][j].contains("\n"))...[
                                       SizedBox(
-                                        width: MediaQuery.of(context).size.width - 200,
+                                        width: MediaQuery.of(context).size.width - 160,
                                         child: makeYourText(value[i][j]),
                                       ),
                                     ]
@@ -284,7 +282,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
                                   ],
                                 ),
                                 SizedBox(
-                                  width: 100,
+                                  width: 80,
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [

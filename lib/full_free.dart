@@ -42,8 +42,8 @@ class _FullFreeTimeTableState extends State<FullFree> {
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      _myScrollToIndex(_daySelected, days, daysCtr, 56, firstTime, false);
-      _myScrollToIndex(_tileSelected, _allSlot, ctr, 41, firstTime, true);
+      _myScrollToIndex(_daySelected, days, daysCtr, 40, firstTime, false);
+      _myScrollToIndex(_tileSelected, _allSlot, ctr, 35, firstTime, true);
       // print(_tileSelected); -----------> Wrong here
       // _scrollToIndex(_daySelected, days.indexOf(_daySelected), daysCtr, 56, firstTime);
       // _scrollToIndex(show, _allSlot.indexOf(_tileSelected), ctr, 41, _dayChanged);
@@ -185,9 +185,10 @@ class _FullFreeTimeTableState extends State<FullFree> {
     return Column(
       children: [
         SizedBox(
-          height: 50,
+          height: 40,
           child: daysBuilder(),
         ),
+        const SizedBox(height: 5,),
         pageViewBuilder(),
       ],
     );
@@ -197,7 +198,7 @@ class _FullFreeTimeTableState extends State<FullFree> {
     return Stack(
       children: <Widget>[
         SizedBox(
-          height: 40,
+          height: 35,
           // child: ScrollablePositionedList.builder(
           child: ListView.builder(
             controller: ctr,
@@ -211,7 +212,9 @@ class _FullFreeTimeTableState extends State<FullFree> {
               var show = formattingSlots(_allSlot[index]);
               final Size txtSize = _textSize(show, const TextStyle(fontWeight: FontWeight.bold, fontSize: 15,));
               return AnimatedContainer(
-                margin: const EdgeInsets.symmetric(horizontal: 3),
+                // margin: const EdgeInsets.symmetric(horizontal: 3),
+                // margin: const EdgeInsets.only(right: 3, left: 3, top: 5),
+                // margin: const EdgeInsets.only(top: 3),
                 curve: Curves.linear,
                 duration: const Duration(milliseconds: 375),
                 width: txtSize.width + 35,
@@ -221,7 +224,7 @@ class _FullFreeTimeTableState extends State<FullFree> {
                 ),
                 child: ListTile(
                   title: Container(
-                    margin: const EdgeInsets.only(bottom: 10),
+                    margin: const EdgeInsets.only(bottom: 20),
                     child: Center(child: makeText(show))
                   ),
                   onTap: () {
@@ -240,7 +243,7 @@ class _FullFreeTimeTableState extends State<FullFree> {
           ),
         ),
         Container(
-          margin: const EdgeInsets.only(top: 45),
+          margin: const EdgeInsets.only(top: 40),
           child: SizedBox(
             height: MediaQuery.of(context).size.height - 200,
             child: PageView.builder(
@@ -374,14 +377,15 @@ class _FullFreeTimeTableState extends State<FullFree> {
           curve: Curves.linear,
           duration: const Duration(milliseconds: 375),
           width: txtSize.width + 40,
-          margin: const EdgeInsets.only(bottom: 6, left: 8, right: 8, top: 3),
+          margin: const EdgeInsets.only(top: 3),
+          // margin: const EdgeInsets.only(bottom: 6, left: 8, right: 8, top: 3),
           decoration: BoxDecoration(
             borderRadius: comp ? BorderRadius.circular(25) : null,
             gradient: comp ? Provider.of<ModelTheme>(context).getGradient() : null
           ),
           child: ListTile(
             title: Container(
-              margin: const EdgeInsets.only(bottom: 10),
+              margin: const EdgeInsets.only(bottom: 15),
               child: Center(child: makeText(days[index]))
             ),
             onTap: () {
