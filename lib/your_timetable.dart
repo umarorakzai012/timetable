@@ -112,6 +112,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
         scr.jumpTo(sum);
         // ctr.jumpTo(index: index, alignment: 0.5 - offset / 2);
         pageController.jumpToPage(index);
+        if(index == pageController.page) firstTime = false;
       } else {
         scr.animateTo(sum, duration: const Duration(milliseconds: 375), curve: Curves.linear);
         // ctr.scrollTo(
@@ -169,7 +170,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
           if(index != -1){
             splited[0] = splited[0].substring(0, index);
           } 
-          if(insertIndex >= slots.length){
+          if(insertIndex >= slots.last.length){
             value.last.add(key);
             slots.last.add(splited[1]);
             classes.last.add(splited[0]);
