@@ -24,13 +24,9 @@ class MyApp extends StatefulWidget{
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _once = true;
 
   @override
   Widget build(BuildContext context) {
-    if(_once){
-      _once = false;
-    }
     selectionPreferences = MySelectionPreferences();
     return ChangeNotifierProvider(
       create: (_) => ModelTheme(),

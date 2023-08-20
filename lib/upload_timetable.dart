@@ -106,17 +106,6 @@ class _UploadTimeTableScreenState extends State<UploadTimeTableScreen> {
           }
 
           if(fullTimeTableData.isNotEmpty){
-            // for(int i = 0; i < chooseCourse.course.length; i++){
-            //   if(copy.contains(chooseCourse.course.elementAt(i)) && selectionPreferences.isSelection){
-            //     current[chooseCourse.course.elementAt(i)] = copy[chooseCourse.course.elementAt(i)]!;
-            //     if(current[chooseCourse.course.elementAt(i)]!){
-            //       selected.add(chooseCourse.course.elementAt(i));
-            //     }
-            //   } 
-            //   else {
-            //     current[chooseCourse.course.elementAt(i)] = false;
-            //   }
-            // }
             if(selectionPreferences.isSelection){
               for (var i = 0; i < chooseCourse.course.length; i++) {
                 if(copy.contains(chooseCourse.course.elementAt(i))){
