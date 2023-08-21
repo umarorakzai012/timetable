@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:timetable/choose_courses.dart';
 import 'package:timetable/full_free.dart';
 import 'package:timetable/settings.dart';
+import 'package:timetable/update_checker.dart';
 import 'package:timetable/upload_timetable.dart';
 
 import 'enum_screen.dart';
@@ -154,8 +155,8 @@ class MyNavigationDrawer extends StatelessWidget {
         ),
         const Divider(thickness: 2,),
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 2,),
-          margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+          padding: const EdgeInsets.symmetric(vertical: 1,),
+          margin: const EdgeInsets.symmetric(horizontal: 5),
           child: ListTile(
             title: const Text("Privacy Policy"),
             leading: const Icon(Icons.privacy_tip),
@@ -173,6 +174,22 @@ class MyNavigationDrawer extends StatelessWidget {
                       ),
                     ],
                   ); 
+                },
+              );
+            },
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 1,),
+          margin: const EdgeInsets.symmetric(horizontal: 5),
+          child: ListTile(
+            title: const Text("Check For Update"),
+            leading: const Icon(Icons.system_update),
+            onTap: () {
+              showDialog(
+                context: _naviContext,
+                builder: (context) {
+                  return const CheckUpdate(fromNavigation: true); 
                 },
               );
             },

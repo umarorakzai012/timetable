@@ -1,19 +1,12 @@
-import 'dart:ffi' as ffi;
-import 'dart:io';
-
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:install_plugin/install_plugin.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:timetable/choose_courses.dart';
 import 'package:timetable/enum_screen.dart';
 import 'package:timetable/full_free.dart';
 import 'package:timetable/navigation_drawer.dart';
-import 'package:timetable/progress_indicator.dart';
 import 'package:timetable/timetable_data.dart';
+import 'package:timetable/update_checker.dart';
 
 import 'model_theme.dart';
 
@@ -31,7 +24,6 @@ class YourTimeTable extends StatefulWidget {
 }
 
 class _YourTimeTableState extends State<YourTimeTable> {
-  final _progressDialogKey = GlobalKey<ProgressDialogState>();
   final List<GlobalKey<AnimatedListState>> _animatedListStateKey = [];
   String _daySelectedYourTimeTable = "";
   List<List<Container>> containers = [];
@@ -39,7 +31,6 @@ class _YourTimeTableState extends State<YourTimeTable> {
   int containerIndex = 0;
 
   List<String> readmeContent = [], days = [];
-  double _progressValue = 0;
   bool iCalled = true;
 
   @override
@@ -53,8 +44,6 @@ class _YourTimeTableState extends State<YourTimeTable> {
     textStyle = TextStyle(fontWeight: FontWeight.bold,fontSize: size,);
     if(_onceyttd){
       load();
-      deletion();
-      checkForUpdate();
     }
     return Scaffold(
       appBar: AppBar(
@@ -64,6 +53,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
           ? yourTimeTableData.isEmpty ? const Center(child: Text("Please Select Course(s)"),) : buildYourTimeTableScreen() 
           : const Center(child: Text("Please Upload An Excel File")),
       drawer : MyNavigationDrawer(Screen.yourTimeTable, context),
+      bottomSheet: const CheckUpdate(fromNavigation: false,),
     );
   }
 
@@ -176,7 +166,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
           child: Container(
             width: MediaQuery.of(context).size.width,
             height: 2,
-            color: Colors.black87,
+            color: Colors.black,
           ),
         ),
         if(indexOfCurrentDaySelected != 0) Positioned(
@@ -287,186 +277,6 @@ class _YourTimeTableState extends State<YourTimeTable> {
     );
   }
 
-  Future checkForUpdate() async{
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-
-    String name = "${packageInfo.appName}-v${packageInfo.version}";
-    var dio = Dio();
-    try {
-      final response = await dio.get(readMeUrl);
-      dio.close();
-      readmeContent = response.data.toString().replaceAll("\n", "").split("<br>");
-      if(!readmeContent.contains(name)){
-        fileUrl = "$fileUrl/${packageInfo.appName}";
-        if(await checkIfExits(fileUrl)){
-          String version = "";
-          for(int i = 0; i < readmeContent.length; i++){
-            var temp = readmeContent[i];
-            if(temp.contains("${packageInfo.appName}-v")){
-              version = temp.substring("${packageInfo.appName}-v".length); // 1.0.0, something like that
-              break;
-            }
-          }
-          if(version == "") return;
-          String apkName = await getSupportedApk(version, packageInfo.appName);
-          if(apkName == "") return;
-          _showAvailableUpdateAlertDialog(apkName);
-        }
-      }
-    } catch (e) {
-      // doing nothing on failure
-    }
-  }
-
-  void _showAvailableUpdateAlertDialog(String apkName) {
-    showDialog(  
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Update Available"),
-          content: const Text("There is an update available. Do you want to update your app?"),
-          actions: [
-            ElevatedButton(
-              child: const Text("No"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            ElevatedButton(
-              child: const Text("Yes"),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _networkInstallApk(apkName);
-              },
-            ),
-          ], 
-        );  
-      },  
-    );  
-  }
-
-  void _showProgressDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return ProgressDialog(key: _progressDialogKey, value: 0.0);
-      },
-    );
-  }
-
-  _networkInstallApk(String apkName) async {
-    if (_progressValue != 0 && _progressValue < 1) {
-      return;
-    }
-    _showProgressDialog(context);
-
-    _progressValue = 0.0;
-    var appDocDir = await getTemporaryDirectory();
-    String savePath = "${appDocDir.path}/app.apk";
-    // https://github.com/umarorakzai012/apkFilesForMyApps/raw/main/TimeTable
-    fileUrl = "$fileUrl/$apkName";
-    // https://github.com/umarorakzai012/apkFilesForMyApps/raw/main/TimeTable/$apkName
-    final dio = Dio();
-
-    try {
-      await dio.download(fileUrl, savePath, onReceiveProgress: (count, total) {
-        if (_progressValue < 1.0) {
-          _progressValue = count / total;
-        } else {
-          _progressValue = 0.0;
-        }
-
-        _progressDialogKey.currentState?.updateProgress(_progressValue);
-      });
-
-      setState(() {
-        iCalled = true;
-        containerIndex++;
-        _progressValue = 0;
-        Navigator.of(context).pop();
-      });
-
-      await InstallPlugin.installApk(savePath);
-
-
-    } catch (e) {
-      setState(() {
-        iCalled = true;
-        containerIndex++;
-        _progressValue = 0;
-        Navigator.of(context).pop();
-        onFailure(context, e.toString());
-      });
-    } finally {
-      dio.close();
-    }
-  }
-
-  void onFailure(BuildContext contextfromAbove, String msg){
-    showDialog(
-      context: contextfromAbove,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Updating Failed"),
-          content: Text(msg),
-          actions: [
-            ElevatedButton(
-              child: const Text("Ok"),
-              onPressed: () => Navigator.of(contextfromAbove).pop(),
-            ),
-          ],
-        );
-      },
-    );
-  }
-  
-  Future<String> getSupportedApk(String version, String appName) async {
-    var abi = ffi.Abi.current();
-    if(abi == ffi.Abi.androidArm && await checkIfExits("$fileUrl/$appName-armeabi-v7a-v$version.apk")){
-      return "$appName-armeabi-v7a-v$version.apk";
-    }
-    else if(abi == ffi.Abi.androidArm64 && await checkIfExits("$fileUrl/$appName-arm64-v8a-v$version.apk")){
-      return "$appName-arm64-v8a-v$version.apk";
-    }
-    else if(abi == ffi.Abi.androidX64 && await checkIfExits("$fileUrl/$appName-x86_64-v$version.apk")){
-      return "$appName-x86_64-v$version.apk";
-    }
-    else if(await checkIfExits("$fileUrl/$appName-v$version.apk")){
-      return "$appName-v$version.apk";
-    }
-    return "";
-  }
-
-  Future<bool> checkIfExits(String url) async {
-    var dio = Dio();
-    try{
-      Response<dynamic> response = await dio.head(url).timeout(const Duration(seconds: 2));
-      dio.close();
-      return response.statusCode == 200;
-    } catch(e){
-      // nothing
-    }
-    return false;
-  }
-
-  void deletion() async{
-    var appDocDir = await getTemporaryDirectory();
-    String savePath = "${appDocDir.path}/app.apk";
-    await deleteFile(File(savePath));
-  }
-
-  Future<void> deleteFile(File file) async{
-    try {
-      if (await file.exists()) {
-        await file.delete();
-      }
-    } catch (e) {
-      // Error in getting access to the file.
-    }
-  }
-
   Container makeContainer(String slot, String classes, String value){
     String top = slot.split("-")[0];
     String bottom = slot.split("-")[1];
@@ -498,7 +308,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
               ]
               else...[
                 makeYourText(value.split("\n")[0]),
-                makeYourText(value.split("\n")[1]),
+                value.split("\n").length == 2 ? makeYourText(value.split("\n")[1]) : makeYourText(""),
               ]
             ],
           ),
