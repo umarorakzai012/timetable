@@ -49,6 +49,23 @@ class _ChooseCourseScreenState extends State<ChooseCourseScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text("Choose Course(s)"),
+          actions: [
+            GestureDetector(
+              child: Container(
+                margin: const EdgeInsets.only(right: 20),
+                child: const Icon(Icons.delete, size: 33,),
+              ),
+              onTap: () async{
+                current.clear();
+                yourTimeTableData.clear();
+                await ChooseCourse.setCurrent(true, current);
+                await YourTimeTableData.setYourTimeTableData(true, yourTimeTableData);
+                setState(() {
+                  showToast(context, "Cleared Selection");
+                });
+              },
+            ),
+          ],
         ),
         floatingActionButton: FloatingActionButton(
           child: const Icon(Icons.save),
