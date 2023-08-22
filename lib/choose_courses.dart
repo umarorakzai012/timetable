@@ -40,8 +40,9 @@ class _ChooseCourseScreenState extends State<ChooseCourseScreen> {
     }
     Set<String> copyChoose = {};
     for(int i = 0; i < chooseCourse.course.length; i++){
-      if(chooseCourse.course.elementAt(i).toLowerCase().contains(_showBy.toLowerCase())){
-        copyChoose.add(chooseCourse.course.elementAt(i));
+      String txt = chooseCourse.course.elementAt(i);
+      if(txt.toLowerCase().contains(_showBy.toLowerCase())){
+        copyChoose.add(txt);
       }
     }
     return WillPopScope(
@@ -56,10 +57,8 @@ class _ChooseCourseScreenState extends State<ChooseCourseScreen> {
                 child: const Icon(Icons.delete, size: 33,),
               ),
               onTap: () async{
-                current.clear();
-                yourTimeTableData.clear();
-                await ChooseCourse.setCurrent(true, current);
-                await YourTimeTableData.setYourTimeTableData(true, yourTimeTableData);
+                await ChooseCourse.clearCurrent(current);
+                await YourTimeTableData.clearYourTimeTableData(yourTimeTableData);
                 setState(() {
                   showToast(context, "Cleared Selection");
                 });
@@ -132,7 +131,7 @@ class _ChooseCourseScreenState extends State<ChooseCourseScreen> {
           ],
         ) 
         : const Center(child: Text("Please Upload an Excel File")),
-        drawer: MyNavigationDrawer(Screen.courseList, context),
+        drawer: const MyNavigationDrawer(Screen.courseList),
       ),
     );
   }

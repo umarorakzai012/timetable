@@ -45,6 +45,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
     if(_onceyttd){
       load();
     }
+    CheckUpdate(fromNavigation: false, context: context);
     return Scaffold(
       appBar: AppBar(
         title: const Text("Your TimeTable"),
@@ -52,8 +53,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
       body: loaded
           ? yourTimeTableData.isEmpty ? const Center(child: Text("Please Select Course(s)"),) : buildYourTimeTableScreen() 
           : const Center(child: Text("Please Upload An Excel File")),
-      drawer : MyNavigationDrawer(Screen.yourTimeTable, context),
-      bottomSheet: const CheckUpdate(fromNavigation: false,),
+      drawer : const MyNavigationDrawer(Screen.yourTimeTable),
     );
   }
 
@@ -139,7 +139,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
         Container(
           margin: const EdgeInsets.only(top: 10, bottom: 78),
           width: MediaQuery.of(context).size.width,
-          child: value[indexOfCurrentDaySelected].isEmpty ? 
+          child: value.isEmpty ?
           const Center(
             child: Text(
               "Free Day",

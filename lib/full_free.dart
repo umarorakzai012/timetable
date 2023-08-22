@@ -50,7 +50,7 @@ class _FullFreeTimeTableState extends State<FullFree> {
         body: loaded && fullTimeTableData.isNotEmpty
             ? buildFullTimeTableScreen()
             : const Center(child: Text("Please Upload An Excel File")),
-        drawer: MyNavigationDrawer(widget.naviKey, context),
+        drawer: MyNavigationDrawer(widget.naviKey),
       ),
     );
   }
@@ -158,6 +158,7 @@ class _FullFreeTimeTableState extends State<FullFree> {
           return Future.delayed(const Duration(milliseconds: 50), (){
             if(innerIndex != containerIndex) return;
             
+            if(!context.mounted) return;
             var cont = makeContainer(i);
 
             if(innerIndex != containerIndex) return;
@@ -264,10 +265,17 @@ class _FullFreeTimeTableState extends State<FullFree> {
   Positioned makeDropdownButtonPositioned({
     required double bottom, required bool isDay
   }) {
-    var displayList = days;
-    var valueList = days;
+    List<String> displayList;
+    List<String> valueList;
 
-    if(!isDay){
+    if(isDay){
+      valueList = days;
+      displayList = [];
+      for (var i = 0; i < days.length; i++) {
+        // MONDAY -> Monday
+        displayList.add("${days[i][0]}${days[i].substring(1).toLowerCase()}");
+      }
+    } else {
       valueList = _allSlot;
       displayList = [];
       for (var i = 0; i < _allSlot.length; i++) {
@@ -296,10 +304,16 @@ class _FullFreeTimeTableState extends State<FullFree> {
               ]
             ], 
             onChanged: (value) {
+              if(_daySelected.compareTo(value) == 0) return;
               if(_tileSelected.compareTo(value) == 0) return;
               setState(() {
                 iCalled = true;
-                _tileSelected = value;
+                if(isDay){
+                  _daySelected = value;
+                  _tileSelected = "";
+                } else {
+                  _tileSelected = value;
+                }
                 containerIndex++;
               });
             },
@@ -311,9 +325,14 @@ class _FullFreeTimeTableState extends State<FullFree> {
 
   Positioned makePositioned({required double bottom, double? right, double? left, 
                                 required String onTapChange, required IconData data, required bool isDay}){
-    String display = onTapChange;
-    if(!isDay) display = formatSlot(display);
-    return Positioned(
+    String display;
+    if(isDay) {
+      display = "${onTapChange[0]}${onTapChange.substring(1).toLowerCase()}";
+    
+    } else {
+      display = formatSlot(onTapChange);
+    
+    }return Positioned(
       bottom: bottom,
       right: right,
       left: left,
@@ -356,6 +375,7 @@ class _FullFreeTimeTableState extends State<FullFree> {
   }
 
   Container makeContainer(int j){
+    if(!context.mounted) return Container();
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20),
       margin: const EdgeInsets.all(5),
@@ -401,7 +421,16 @@ class _FullFreeTimeTableState extends State<FullFree> {
   }
 
   Widget makeFreeWidget(String classShow){
-    return Center(child: makeText(classShow));
+    return Center(
+      child: Text(
+        classShow,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+        ),
+      )
+    );
   }
 }
 

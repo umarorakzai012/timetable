@@ -38,7 +38,7 @@ class _UploadTimeTableScreenState extends State<UploadTimeTableScreen> {
           title: const Text("Upload Excel"),
         ),
         body: buildUploadTimeTableScreen(),
-        drawer: MyNavigationDrawer(Screen.uploadExcel, context),
+        drawer: const MyNavigationDrawer(Screen.uploadExcel),
       ),
     );
   }
@@ -78,8 +78,11 @@ class _UploadTimeTableScreenState extends State<UploadTimeTableScreen> {
           var result = await FilePicker.platform.pickFiles(withData: true, type: FileType.custom, allowedExtensions: ['xlsx']);
           if(result == null) return;
 
+
           final SharedPreferences prefs = await SharedPreferences.getInstance();
+          DateTime lastChecked = DateTime.parse(prefs.getString("last checked date")!);
           await prefs.clear();
+          prefs.setString("last checked date", lastChecked.toString());
 
           setState(() {
             showAlertDialog(context);
@@ -236,12 +239,18 @@ Future read(Uint8List? fileBytes) async {
       if(last.classes[i - 4 - additionalRows].compareTo("LABS") == 0) continue;
       for(int j = 1 + additionalColumns; j < excel.tables[table]!.maxCols; j++){
         var value = rowsAndColumn[i][j] == null ? "free" : rowsAndColumn[i][j]!.value.toString();
-        last.courses["${last.classes[i - 4 - additionalRows]}...${last.slots[j - 1 - additionalColumns]}"] = value;
-        if(value.toLowerCase().contains("lab b") || value.toLowerCase().contains("reserved for ee")) {
+        var split = value.split("\n");
+        var txt1 = split[0].trimRight().trimLeft();
+        var txt2 = "";
+        if(split.length == 2) txt2 = "\n${split[1].trimRight().trimLeft()}";
+        var txt = "$txt1$txt2";
+        last.courses["${last.classes[i - 4 - additionalRows]}...${last.slots[j - 1 - additionalColumns]}"] = txt;
+        if(txt.toLowerCase().contains("lab b") || txt.toLowerCase().contains("reserved for ee")) {
           j += 2;
         }
-        if(value == "free") continue;
-        chooseCourse.course.add(value);
+        if(txt == "free") continue;
+
+        chooseCourse.course.add(txt);
       }
     }
   }

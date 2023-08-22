@@ -54,6 +54,22 @@ class YourTimeTableData {
     return  isLoadededed ?? false;
   }
 
+  static Future<void> clearYourTimeTableData(Map<String, YourTimeTableData> yttdm) async{
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("YourTimeTableData yourCourses loaded", false);
+    List<String> yttdmKeys = yttdm.keys.toList();
+    await prefs.remove("yttdm keys");
+    for(var yttdmKey in yttdmKeys){
+      YourTimeTableData yttd = yttdm[yttdmKey]!;
+      List<String> yttdKeys = yttd.yourCourses.keys.toList();
+      await prefs.remove("yttd $yttdmKey");
+      for(var yttdKey in yttdKeys){
+        await prefs.remove("yttd value $yttdmKey $yttdKey");
+      }
+    }
+    yttdm.clear();
+  }
+
   static Future<void> setYourTimeTableData(bool loaded, Map<String, YourTimeTableData> yttdm) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool("YourTimeTableData yourCourses loaded", loaded);
@@ -121,6 +137,13 @@ class ChooseCourse {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_loadedKey, loaded);
     await prefs.setStringList("cccourse", cc.course.toList());
+  }
+
+  static Future<void> clearCurrent(Set<String> currents) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("current is loaded", false);
+    await prefs.remove("current keys");
+    currents.clear();
   }
 
   static Future<void> setCurrent(bool isLoaded, Set<String> currents) async {

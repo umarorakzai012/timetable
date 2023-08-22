@@ -9,28 +9,17 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timetable/progress_indicator.dart';
 
-class CheckUpdate extends StatefulWidget {
-  const CheckUpdate({super.key, required this.fromNavigation});
+class CheckUpdate {
+  CheckUpdate({required this.fromNavigation, required this.context}){
+    checkForUpdate();
+  }
 
-  final bool fromNavigation;
-
-  @override
-  State<CheckUpdate> createState() => _CheckUpdateState();
-}
-
-class _CheckUpdateState extends State<CheckUpdate> {
+  final BuildContext context;
+  final bool fromNavigation; 
+  bool cancelled = false;
 
   String fileUrl = "https://github.com/umarorakzai012/apkFilesForMyApps/raw/main";
   final _progressDialogKey = GlobalKey<ProgressDialogState>();
-
-  @override
-  Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      checkForUpdate();
-      deletion();
-    });
-    return const SizedBox(height: 0, width: 0,);
-  }
 
   Future<bool> checkForToday() async{
     var prefs = await SharedPreferences.getInstance();
@@ -48,7 +37,8 @@ class _CheckUpdateState extends State<CheckUpdate> {
   }
 
   Future checkForUpdate() async{
-    if(widget.fromNavigation){
+    bool completed = false;
+    if(fromNavigation){
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -58,10 +48,10 @@ class _CheckUpdateState extends State<CheckUpdate> {
             content: Wrap(children: [Center(child: CircularProgressIndicator())]),
           );
         },
-      );
+      ).whenComplete(() => completed = true);
     }
     var checkedAlready = await checkForToday();
-    if(checkedAlready && !widget.fromNavigation) return;
+    if(checkedAlready && !fromNavigation) return;
 
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     String readMeUrl = 'https://raw.githubusercontent.com/umarorakzai012/apkFilesForMyApps/main/README.md';
@@ -71,7 +61,7 @@ class _CheckUpdateState extends State<CheckUpdate> {
     try {
       final response = await dio.get(readMeUrl);
       if(response.statusCode != 200){
-        if(widget.fromNavigation) defaultAlertDialog("A Problem Occured", "A problem occuried while checking for update. Could not get response.");
+        if(fromNavigation) defaultAlertDialog("A Problem Occured", "A problem occuried while checking for update. Could not get response.");
       }
       dio.close();
       var readmeContent = response.data.toString().replaceAll("\n", "").split("<br>");
@@ -87,26 +77,29 @@ class _CheckUpdateState extends State<CheckUpdate> {
             }
           }
           if(version == ""){
-            if(widget.fromNavigation) defaultAlertDialog("A Problem Occured", "A problem occuried while checking for update. Could not get version.");
+            if(fromNavigation) defaultAlertDialog("A Problem Occured", "A problem occuried while checking for update. Could not get version.");
             return;
           }
           String apkName = await getSupportedApk(version, packageInfo.appName);
           if(apkName == ""){
-            if(widget.fromNavigation) defaultAlertDialog("A Problem Occured", "A problem occuried while checking for update. Could not get apk.");
+            if(fromNavigation) defaultAlertDialog("A Problem Occured", "A problem occuried while checking for update. Could not get apk.");
             return;
           }
+          if(completed) return;
           _showAvailableUpdateAlertDialog(apkName);
         }
-      } else if(widget.fromNavigation){
+      } else if(fromNavigation){
         defaultAlertDialog("No Update Available", "There is no update available.");
       }
     } catch (e) {
+      if(fromNavigation){
+        defaultAlertDialog("A Problem Occured", "A problem occuried while checking for update.");
+      }
       // doing nothing on failure
     }
   }
 
   defaultAlertDialog(String title, String content) {
-    Navigator.of(context).pop();
     Navigator.of(context).pop();
     showDialog(
       context: context,
@@ -128,7 +121,9 @@ class _CheckUpdateState extends State<CheckUpdate> {
   }
 
   void _showAvailableUpdateAlertDialog(String apkName) {
-    if(widget.fromNavigation) Navigator.of(context).pop();
+    if(fromNavigation){
+      Navigator.of(context).pop();
+    }
     showDialog(  
       context: context,
       builder: (BuildContext context) {
@@ -162,7 +157,7 @@ class _CheckUpdateState extends State<CheckUpdate> {
       builder: (BuildContext context) {
         return ProgressDialog(key: _progressDialogKey, value: 0.0);
       },
-    );
+    ).whenComplete(() => cancelled = true);
   }
 
   void _networkInstallApk(String apkName) async {
@@ -174,12 +169,17 @@ class _CheckUpdateState extends State<CheckUpdate> {
     // https://github.com/umarorakzai012/apkFilesForMyApps/raw/main/TimeTable
     fileUrl = "$fileUrl/$apkName";
     // https://github.com/umarorakzai012/apkFilesForMyApps/raw/main/TimeTable/$apkName
-    final dio = Dio();
+
+    while(_progressDialogKey.currentState == null){
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
 
     double progressValue = _progressDialogKey.currentState!.progress;
 
+    final dio = Dio();
+    var cancelToken = CancelToken();
     try {
-      await dio.download(fileUrl, savePath, onReceiveProgress: (count, total) {
+      await dio.download(fileUrl, savePath, cancelToken: cancelToken, onReceiveProgress: (count, total) {
         if (progressValue < 1.0) {
           progressValue = count / total;
         } else {
@@ -187,42 +187,19 @@ class _CheckUpdateState extends State<CheckUpdate> {
         }
 
         _progressDialogKey.currentState?.updateProgress(progressValue);
+        if(cancelled) cancelToken.cancel("user cancelled");
       });
 
-      setState(() {
-        Navigator.of(context).pop();
-      });
+      Navigator.of(context).pop();
 
       await InstallPlugin.installApk(savePath);
-
-
     } catch (e) {
-      setState(() {
-        Navigator.of(context).pop();
-        onFailure(context, "Please try again.");
-      });
+      if(!cancelToken.isCancelled){
+        defaultAlertDialog("Updating Failed", "Please try again.");
+      }
     } finally {
       dio.close();
     }
-  }
-
-  void onFailure(BuildContext contextfromAbove, String msg){
-    showDialog(
-      context: contextfromAbove,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Updating Failed"),
-          content: Text(msg),
-          actions: [
-            ElevatedButton(
-              child: const Text("Ok"),
-              onPressed: () => Navigator.of(contextfromAbove).pop(),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   Future<String> getSupportedApk(String version, String appName) async {
