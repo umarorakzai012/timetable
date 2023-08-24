@@ -11,6 +11,7 @@ import 'package:timetable/progress_indicator.dart';
 
 class CheckUpdate {
   CheckUpdate({required this.fromNavigation, required this.context}){
+    deletion();
     checkForUpdate();
   }
 

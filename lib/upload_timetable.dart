@@ -161,30 +161,16 @@ void showToast(BuildContext context, String msg) {
   );
 }
 
-void showDoneDialog(BuildContext context, String msg){
-  showDialog(  
-    context: context,
-    builder: (BuildContext context) {  
-      return AlertDialog(  
-        content: Text(msg),
-        actions: [
-          ElevatedButton(
-            child: const Text("Okay"),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
-      );  
-    },  
-  );  
-}
-
 void showAlertDialog(BuildContext context) {
   showDialog(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
-      return const AlertDialog(  
-        content: Text("Please wait a moment while it extracts data..."),
+      return WillPopScope(
+        onWillPop: () async => false,
+        child: const AlertDialog(  
+          content: Text("Please wait a moment while it extracts data..."),
+        ),
       );  
     },  
   );  
@@ -208,7 +194,7 @@ Future read(Uint8List? fileBytes) async {
     for(int i = 0; i < rowsAndColumn.length; i++){
       for(int j = 0; j < rowsAndColumn[i].length; j++){
         var value = rowsAndColumn[i][j] == null ? "free" : rowsAndColumn[i][j]!.value.toString();
-        if(value.toUpperCase().compareTo(table.toUpperCase()) == 0){
+        if(value.toUpperCase().trim().compareTo(table.toUpperCase().trim()) == 0){
           additionalRows = i;
           additionalColumns = j;
           break;
@@ -222,6 +208,7 @@ Future read(Uint8List? fileBytes) async {
     if(additionalRows == -1 && additionalColumns == -1){
       return;
     }
+    
 
     fullTimeTableData[table] = FullTimeTableData();
     var last = fullTimeTableData[table]!;
@@ -240,9 +227,9 @@ Future read(Uint8List? fileBytes) async {
       for(int j = 1 + additionalColumns; j < excel.tables[table]!.maxCols; j++){
         var value = rowsAndColumn[i][j] == null ? "free" : rowsAndColumn[i][j]!.value.toString();
         var split = value.split("\n");
-        var txt1 = split[0].trimRight().trimLeft();
+        var txt1 = split[0].trim();
         var txt2 = "";
-        if(split.length == 2) txt2 = "\n${split[1].trimRight().trimLeft()}";
+        if(split.length == 2) txt2 = "\n${split[1].trim()}";
         var txt = "$txt1$txt2";
         last.courses["${last.classes[i - 4 - additionalRows]}...${last.slots[j - 1 - additionalColumns]}"] = txt;
         if(txt.toLowerCase().contains("lab b") || txt.toLowerCase().contains("reserved for ee")) {

@@ -140,12 +140,22 @@ class _YourTimeTableState extends State<YourTimeTable> {
           margin: const EdgeInsets.only(top: 10, bottom: 78),
           width: MediaQuery.of(context).size.width,
           child: value.isEmpty ?
-          const Center(
-            child: Text(
-              "Free Day",
-              style: TextStyle(fontSize: 30),
+          // const Center(
+          //   child: Text(
+          //     "Free Day",
+          //     style: TextStyle(fontSize: 30),
+          //   ),
+          const AnimatedSlide(
+            duration: Duration(milliseconds: 375),
+            offset: Offset(0, 0),
+            child: Center(
+              child: Text(
+                "Free Day",
+                style: TextStyle(fontSize: 30),
+              ),
             ),
           ) :
+          // ) :
           AnimatedList(
             key: _animatedListStateKey[containerIndex],
             physics: const BouncingScrollPhysics(),
