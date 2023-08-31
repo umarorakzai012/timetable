@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
 import 'package:timetable/choose_courses.dart';
 import 'package:timetable/enum_screen.dart';
@@ -23,11 +24,8 @@ class _FullFreeTimeTableState extends State<FullFree> {
   Map<String, List<String>> showDayData = {};
   var _daySelected = "", _tileSelected = "";
   List<String> _allSlot = [], days = [];
-  bool iCalled = true, callBackDone = false;
-  final List<GlobalKey<AnimatedListState>> _animatedListStateKey = [];
   List<List<Container>> containers = [];
-  
-  int containerIndex = 0;
+  PageController pageController = PageController(keepPage: false);
 
   Future<bool> pushReplacementToYourTimeTable(){
     Navigator.of(context).pushReplacement(
@@ -124,9 +122,8 @@ class _FullFreeTimeTableState extends State<FullFree> {
   Widget buildFullTimeTableScreen() {
     days.clear();
     showDayData.clear();
+    containers.clear();
     days.addAll(fullTimeTableData.keys);
-    _animatedListStateKey.add(GlobalKey<AnimatedListState>());
-    containers.add([]);
 
     var date = DateTime.now();
     // print(date); -> 2023-08-14 17:32:00.104376
@@ -139,37 +136,18 @@ class _FullFreeTimeTableState extends State<FullFree> {
     }
 
     _allSlot = fullTimeTableData[_daySelected]!.slots;
+    var dayChanged = false;
     if(_tileSelected.compareTo("") == 0){
+      pageController.dispose();
+      dayChanged = true;
       int slotAccordingToCurrentTime = currentSlotShouldBe(date, _allSlot);
       _tileSelected = _allSlot[slotAccordingToCurrentTime];
+      pageController = PageController(initialPage: slotAccordingToCurrentTime, keepPage: false);
     }
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      if(!iCalled) return;
-      iCalled = false;
-      int index = _allSlot.indexOf(_tileSelected);
-      if(index == -1) return;
-
-      Future ft = Future(() {});
-
-      int innerIndex = containerIndex;
-      for (var i = 0; i < showDayData[_tileSelected]!.length; i++) {
-        ft = ft.then((_) {
-          return Future.delayed(const Duration(milliseconds: 50), (){
-            if(innerIndex != containerIndex) return;
-            
-            if(!context.mounted) return;
-            var cont = makeContainer(i);
-
-            if(innerIndex != containerIndex) return;
-            containers[innerIndex].add(cont);
-            
-            if(innerIndex != containerIndex) return;
-            _animatedListStateKey[innerIndex].currentState!.insertItem(containers[innerIndex].length - 1);
-          });
-        });
-      }
-      callBackDone = true;
+      if(!dayChanged) return;
+      pageController.jumpToPage(_allSlot.indexOf(_tileSelected));
     },);
 
     for(var key in fullTimeTableData[_daySelected]!.courses.keys){
@@ -183,7 +161,6 @@ class _FullFreeTimeTableState extends State<FullFree> {
       var keyClasses = inside[0];
       keyClasses = keyClasses.substring(0, keyClasses.contains("(") ? keyClasses.indexOf("(") : keyClasses.length);
       var keySlot = inside[1];
-      if(_tileSelected.compareTo(keySlot) != 0) continue;
       if(showDayData.containsKey(keySlot)){
         if(widget.naviKey == Screen.freeTimeTable) {
           showDayData[keySlot]!.add(keyClasses);
@@ -191,11 +168,18 @@ class _FullFreeTimeTableState extends State<FullFree> {
           showDayData[keySlot]!.add("$keyClasses...$value");
         }
       } else {
+        containers.add([]);
         if(widget.naviKey == Screen.freeTimeTable){
           showDayData[keySlot] = [keyClasses];
         } else {
           showDayData[keySlot] = ["$keyClasses...$value"];
         }
+      }
+    }
+    for (var key in showDayData.keys) {
+      int index = _allSlot.indexOf(key);
+      for (var i = 0; i < showDayData[key]!.length; i++) {
+        containers[index].add(makeContainer(key, i));
       }
     }
     return pageViewBuilder();
@@ -211,9 +195,6 @@ class _FullFreeTimeTableState extends State<FullFree> {
   Widget pageViewBuilder() {
     int indexOfCurrentDaySelected = days.indexOf(_daySelected);
     int indexOfCurrentSlotSelected = _allSlot.indexOf(_tileSelected);
-
-    Tween<Offset> tweenSlide = Tween<Offset>(begin: const Offset(0, 1), end: const Offset(0, 0));
-    Tween<double> tweenFade = Tween<double>(begin: 0, end: 1);
     return Stack(
       alignment: AlignmentDirectional.center,
       children: <Widget>[
@@ -221,18 +202,48 @@ class _FullFreeTimeTableState extends State<FullFree> {
           margin: const EdgeInsets.only(top: 10, bottom: 127),
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
-          child: AnimatedList(
-            key: _animatedListStateKey[containerIndex],
-            physics: const BouncingScrollPhysics(),
-            initialItemCount: containers[containerIndex].length,
-            itemBuilder: (context, index, animation) {
-              return SlideTransition(
-                position: animation.drive(tweenSlide),
-                child: FadeTransition(
-                  opacity: animation.drive(tweenFade),
-                  child: containers[containerIndex][index],
+          child: PageView.builder(
+            controller: pageController,
+            itemCount: containers.length,
+            itemBuilder: (context, i) {
+              if(containers[i].isEmpty){
+                return Center(
+                  child: AnimationConfiguration.staggeredList(
+                    position: 0,
+                    duration: const Duration(milliseconds: 375),
+                    child: SlideAnimation(
+                      child: FadeInAnimation(
+                        child: Text(
+                          widget.emptySlot,
+                          style: const TextStyle(fontSize: 30),
+                        ),
+                      ),
+                    ),
+                  ) 
+                );
+              }
+              return AnimationLimiter(
+                child: ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: containers[i].length,
+                  itemBuilder: (context, j) {
+                    return AnimationConfiguration.staggeredList(
+                      position: j,
+                      duration: const Duration(milliseconds: 375),
+                      child: SlideAnimation(
+                        child: FadeInAnimation(
+                          child: containers[i][j]
+                        ),
+                      ),
+                    );
+                  },
                 ),
               );
+            },
+            onPageChanged: (value) {
+              setState(() {
+                _tileSelected = _allSlot[value];
+              });
             },
           ),
         ),
@@ -306,16 +317,14 @@ class _FullFreeTimeTableState extends State<FullFree> {
             onChanged: (value) {
               if(_daySelected.compareTo(value) == 0) return;
               if(_tileSelected.compareTo(value) == 0) return;
-              setState(() {
-                iCalled = true;
-                if(isDay){
-                  _daySelected = value;
-                  _tileSelected = "";
-                } else {
-                  _tileSelected = value;
-                }
-                containerIndex++;
-              });
+              if(isDay){
+                _daySelected = value;
+                _tileSelected = "";
+                setState(() {
+                });
+              } else {
+                pageController.jumpToPage(_allSlot.indexOf(value));
+              }
             },
           ),
         ),
@@ -338,18 +347,14 @@ class _FullFreeTimeTableState extends State<FullFree> {
       left: left,
       child: GestureDetector(
         onTap: () {
-          if(!callBackDone) return;
-          setState(() {
-            iCalled = true;
-            callBackDone = false;
-            if(isDay){
-              _daySelected = onTapChange;
-              _tileSelected = "";
-            } else {
-              _tileSelected = onTapChange;
-            }
-            containerIndex++;
-          });
+          if(isDay){
+            _daySelected = onTapChange;
+            _tileSelected = "";
+            setState(() {
+            });
+          } else {
+            pageController.jumpToPage(_allSlot.indexOf(onTapChange));
+          }
         },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 7),
@@ -374,7 +379,7 @@ class _FullFreeTimeTableState extends State<FullFree> {
     );
   }
 
-  Container makeContainer(int j){
+  Container makeContainer(String slot, int j){
     if(!context.mounted) return Container();
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -385,8 +390,8 @@ class _FullFreeTimeTableState extends State<FullFree> {
         gradient: Provider.of<ModelTheme>(context, listen: false).getGradient()
       ),
       child: widget.naviKey == Screen.fullTimeTable 
-        ? makeFullWidget(showDayData[_tileSelected]![j])
-        : makeFreeWidget(showDayData[_tileSelected]![j])
+        ? makeFullWidget(showDayData[slot]![j])
+        : makeFreeWidget(showDayData[slot]![j])
     );
   }
 
@@ -399,13 +404,11 @@ class _FullFreeTimeTableState extends State<FullFree> {
         const SizedBox(width: 15,),
         SizedBox(
           width: 80,
-          // height: 40,
           child: Center(child: makeText(classShow))
         ),
         const SizedBox(width: 10,),
         SizedBox(
           width: MediaQuery.of(context).size.width - 115,
-          // height: 40,
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

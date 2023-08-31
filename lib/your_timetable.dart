@@ -63,14 +63,15 @@ class _YourTimeTableState extends State<YourTimeTable> {
     if(_daySelectedYourTimeTable.compareTo("") == 0){
       int index = (DateTime.now().weekday - 1) >= days.length ? 0 : DateTime.now().weekday - 1;
       _daySelectedYourTimeTable = days[index];
+      pageController.dispose();
+      pageController = PageController(initialPage: index);
     }
     
     int indexOfCurrentDaySelected = days.indexOf(_daySelectedYourTimeTable);
 
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      if(pageController.hasClients) return;
-      pageController.jumpToPage(indexOfCurrentDaySelected);
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+    //   pageController.jumpToPage(indexOfCurrentDaySelected);
+    // });
 
     DateTime now = DateTime.now();
     for (var i = 0; i < days.length; i++) {

@@ -78,7 +78,6 @@ class _UploadTimeTableScreenState extends State<UploadTimeTableScreen> {
           var result = await FilePicker.platform.pickFiles(withData: true, type: FileType.custom, allowedExtensions: ['xlsx']);
           if(result == null) return;
 
-
           final SharedPreferences prefs = await SharedPreferences.getInstance();
           DateTime lastChecked = DateTime.parse(prefs.getString("last checked date")!);
           await prefs.clear();
@@ -214,7 +213,8 @@ Future read(Uint8List? fileBytes) async {
     var last = fullTimeTableData[table]!;
 
     for(int i = 1; i < excel.tables[table]!.maxCols; i++){
-      last.slots.add(rowsAndColumn[additionalRows + 2][i] == null ? "free" : rowsAndColumn[additionalRows + 2][i]!.value.toString());
+      var adding = rowsAndColumn[additionalRows + 2][i];
+      last.slots.add(adding == null ? "free" : adding.value.toString().replaceAll(" ", ""));
     }
 
     for(int i = 4 + additionalRows; i < excel.tables[table]!.maxRows; i++){
