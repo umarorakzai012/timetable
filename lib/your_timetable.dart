@@ -83,7 +83,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
       for(String key in yourTimeTableData[days[i]]!.yourCourses.keys){
         for(String classesAndSlots in yourTimeTableData[days[i]]!.yourCourses[key]!){
           var splited = classesAndSlots.split("...");
-          int insertIndex = slots.length;
+          int insertIndex = slots[i].length;
           DateTime currentSlot = createDateTime(splited[1].split("-")[0], now);
           for (var j = 0; j < allAddedSlotDateTime.length; j++) {
             if(currentSlot.isBefore(allAddedSlotDateTime[j])){
