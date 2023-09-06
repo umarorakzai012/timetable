@@ -183,7 +183,8 @@ Future read(Uint8List? fileBytes) async {
 
   for (var table in excel.tables.keys) {
 
-    if(!days.contains(table.toUpperCase())) continue;
+    if(!days.contains(table.toUpperCase().trim())) continue;
+
 
     var rowsAndColumn = excel.tables[table]!.rows;
 
@@ -208,23 +209,24 @@ Future read(Uint8List? fileBytes) async {
       return;
     }
     
-
     fullTimeTableData[table] = FullTimeTableData();
     var last = fullTimeTableData[table]!;
 
-    for(int i = 1; i < excel.tables[table]!.maxCols; i++){
+    for(int i = 1 + additionalColumns; i < excel.tables[table]!.maxCols; i++){
       var adding = rowsAndColumn[additionalRows + 2][i];
-      last.slots.add(adding == null ? "free" : adding.value.toString().replaceAll(" ", ""));
+      if(adding == null) continue;
+      last.slots.add(adding.value.toString().replaceAll(" ", ""));
     }
 
     for(int i = 4 + additionalRows; i < excel.tables[table]!.maxRows; i++){
-      var value = rowsAndColumn[i][additionalColumns] == null ? "free" : rowsAndColumn[i][additionalColumns]!.value.toString();
-      last.classes.add(value);
+      var value = rowsAndColumn[i][additionalColumns];
+      if(value == null) continue;
+      last.classes.add(rowsAndColumn[i][additionalColumns]!.value.toString());
     }
 
-    for(int i = 4 + additionalRows; i < excel.tables[table]!.maxRows; i++){
+    for(int i = 4 + additionalRows; i < last.classes.length + 4 + additionalRows; i++){
       if(last.classes[i - 4 - additionalRows].compareTo("LABS") == 0) continue;
-      for(int j = 1 + additionalColumns; j < excel.tables[table]!.maxCols; j++){
+      for(int j = 1 + additionalColumns; j < last.slots.length + 1 + additionalColumns; j++){
         var value = rowsAndColumn[i][j] == null ? "free" : rowsAndColumn[i][j]!.value.toString();
         var split = value.split("\n");
         var txt1 = split[0].trim();
