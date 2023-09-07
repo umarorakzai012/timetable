@@ -50,7 +50,7 @@ class _MyAppState extends State<MyApp> {
           )
         : ThemeData(
             brightness: Brightness.light,
-            primarySwatch: Colors.indigo,
+            primaryColor: Colors.white,
           );
   }
 }

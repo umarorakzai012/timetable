@@ -33,7 +33,7 @@ class _SettingScreenState extends State<SettingScreen> {
       onWillPop: pushReplacementToYourTimeTable,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text("Setting"),
+          title: const Text("Settings"),
         ),
         body: ListView(
           children: <Widget>[

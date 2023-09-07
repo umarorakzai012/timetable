@@ -6,6 +6,7 @@ import 'package:timetable/choose_courses.dart';
 import 'package:timetable/enum_screen.dart';
 import 'package:timetable/full_free.dart';
 import 'package:timetable/navigation_drawer.dart';
+import 'package:timetable/tab_view.dart';
 import 'package:timetable/timetable_data.dart';
 import 'package:timetable/update_checker.dart';
 
@@ -25,7 +26,6 @@ class YourTimeTable extends StatefulWidget {
 }
 
 class _YourTimeTableState extends State<YourTimeTable> {
-  String _daySelectedYourTimeTable = "";
   late TextStyle textStyle;
 
   List<String> readmeContent = [], days = [];
@@ -44,28 +44,18 @@ class _YourTimeTableState extends State<YourTimeTable> {
     }
     CheckUpdate(fromNavigation: false, context: context);
     days = yourTimeTableData.keys.toList();
-    return DefaultTabController(
-      length: days.length,
-      child: Scaffold(
+    if(yourTimeTableData.isEmpty){
+      return Scaffold(
         appBar: AppBar(
           title: const Text("Your TimeTable"),
-          bottom: loaded ? yourTimeTableData.isEmpty ? null : TabBar(
-            isScrollable: true,
-            tabs: <Widget>[
-              for(int i = 0; i < days.length; i++)...[
-                Tab(
-                  child: Text(days[i]),
-                )
-              ]
-            ],
-          ) : null,
         ),
-        body: loaded
-            ? yourTimeTableData.isEmpty ? const Center(child: Text("Please Select Course(s)"),) : buildYourTimeTableScreen() 
-            : const Center(child: Text("Please Upload An Excel File")),
+        body: loaded 
+        ? const Center(child: Text("Please Select Course(s)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),)) 
+        : const Center(child: Text("Please Upload An Excel File", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20))),
         drawer : const MyNavigationDrawer(Screen.yourTimeTable),
-      ),
-    );
+      );
+    }
+    return buildYourTimeTableScreen();
   }
 
   Widget buildYourTimeTableScreen() {
@@ -73,10 +63,12 @@ class _YourTimeTableState extends State<YourTimeTable> {
     List<List<String>> slots = [], classes = [], value = [];
     List<List<Container>> containers = [];
 
-    if(_daySelectedYourTimeTable.compareTo("") == 0){
-      int index = (DateTime.now().weekday - 1) >= days.length ? 0 : DateTime.now().weekday - 1;
-      _daySelectedYourTimeTable = days[index];
+    List<Tab> tabs = [];
+    for (var i = 0; i < days.length; i++) {
+      tabs.add(Tab(child: Text(days[i]),));
     }
+
+    int index = (DateTime.now().weekday - 1) >= days.length ? 0 : DateTime.now().weekday - 1;
 
     DateTime now = DateTime.now();
     for (var i = 0; i < days.length; i++) {
@@ -117,51 +109,48 @@ class _YourTimeTableState extends State<YourTimeTable> {
         containers[i].add(makeContainer(slots[i][j], classes[i][j], value[i][j]));
       }
     }
-    return SizedBox(
-      height: MediaQuery.of(context).size.height,
-      child: TabBarView(
-        children: <Widget>[
-          for(int i = 0; i < days.length; i++)...[
-            if(value[i].isEmpty) const Center(
-              child: AnimationConfiguration.staggeredList(
-                position: 0,
-                duration: Duration(milliseconds: 375),
-                child: SlideAnimation(
-                  child: FadeInAnimation(
-                    child: Text(
-                      "Free Day",
-                      style: TextStyle(fontSize: 30),
-                    ),
-                  ),
+    List<Widget> display = [];
+    for (var i = 0; i < days.length; i++) {
+      if(value[i].isEmpty){
+        display.add(const Center(
+          child: AnimationConfiguration.staggeredList(
+            position: 0,
+            duration: Duration(milliseconds: 375),
+            child: SlideAnimation(
+              child: FadeInAnimation(
+                child: Text(
+                  "Free Day",
+                  style: TextStyle(fontSize: 30),
                 ),
-              ) 
-            ),
-            if(value[i].isNotEmpty) Container(
-              margin: const EdgeInsets.only(top: 10, bottom: 78),
-              width: MediaQuery.of(context).size.width,
-              // height: MediaQuery.of(context).size.height,
-              child: AnimationLimiter(
-                child: ListView.builder(
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: containers[i].length,
-                  itemBuilder: (context, j) {
-                    return AnimationConfiguration.staggeredList(
-                      position: j,
-                      duration: const Duration(milliseconds: 375),
-                      child: SlideAnimation(
-                        child: FadeInAnimation(
-                          child: containers[i][j]
-                        ),
-                      )
-                    );
-                  },
-                )
               ),
+            ),
+          ) 
+        ));
+      } else {
+        display.add(Container(
+          margin: const EdgeInsets.only(top: 10, bottom: 78),
+          width: MediaQuery.of(context).size.width,
+          child: AnimationLimiter(
+            child: ListView.builder(
+              physics: const BouncingScrollPhysics(),
+              itemCount: containers[i].length,
+              itemBuilder: (context, j) {
+                return AnimationConfiguration.staggeredList(
+                  position: j,
+                  duration: const Duration(milliseconds: 375),
+                  child: SlideAnimation(
+                    child: FadeInAnimation(
+                      child: containers[i][j]
+                    ),
+                  )
+                );
+              },
             )
-          ]
-        ]
-      ),
-    );
+          ),
+        ));
+      }
+    }
+    return MyTabBar(tabs: tabs, display: display, title: "Your TimeTable", initialIndex: index, drawer: const MyNavigationDrawer(Screen.yourTimeTable),);
   }
 
   String formattingSlots(String slot){

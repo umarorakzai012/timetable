@@ -23,9 +23,9 @@ class MySelectionPreferences {
   }
 
   Future<void> setSelection(bool value) async {
+    isSelection = value;
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
     await sharedPreferences.setBool(selectionKey, value);
-    isSelection = value;
   }
 
   void _getSelection() async {
