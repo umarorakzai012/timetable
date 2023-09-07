@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:timetable/choose_courses.dart';
 import 'package:timetable/enum_screen.dart';
 import 'package:timetable/navigation_drawer.dart';
+import 'package:timetable/tab_view.dart';
 import 'package:timetable/timetable_data.dart';
 import 'package:timetable/your_timetable.dart';
 
@@ -22,10 +23,8 @@ class FullFree extends StatefulWidget {
 
 class _FullFreeTimeTableState extends State<FullFree> {
   Map<String, List<String>> showDayData = {};
-  var _daySelected = "", _tileSelected = "";
   List<String> _allSlot = [], days = [];
-  List<List<Container>> containers = [];
-  PageController pageController = PageController(keepPage: false);
+  List<List<List<Container>>> containers = [];
 
   Future<bool> pushReplacementToYourTimeTable(){
     Navigator.of(context).pushReplacement(
@@ -39,17 +38,21 @@ class _FullFreeTimeTableState extends State<FullFree> {
 
   @override
   Widget build(BuildContext context) {
+    if(!loaded && fullTimeTableData.isEmpty){
+      return WillPopScope(
+        onWillPop: pushReplacementToYourTimeTable,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(widget.appBarText),
+          ),
+          body: const Center(child: Text("Please Upload An Excel File", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20))),
+          drawer: MyNavigationDrawer(widget.naviKey),
+        ), 
+      );
+    }
     return WillPopScope(
       onWillPop: pushReplacementToYourTimeTable,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(widget.appBarText),
-        ),
-        body: loaded && fullTimeTableData.isNotEmpty
-            ? buildFullTimeTableScreen()
-            : const Center(child: Text("Please Upload An Excel File")),
-        drawer: MyNavigationDrawer(widget.naviKey),
-      ),
+      child: buildFullTimeTableScreen(),
     );
   }
 
@@ -124,65 +127,108 @@ class _FullFreeTimeTableState extends State<FullFree> {
     showDayData.clear();
     containers.clear();
     days.addAll(fullTimeTableData.keys);
+    List<Tab> tabs = [];
+    List<List<Tab>> nestedTabs = [];
+    List<Widget> display = [];
+    List<List<Widget>> nestedDisplay = [];
 
     var date = DateTime.now();
     // print(date); -> 2023-08-14 17:32:00.104376
-    if(_daySelected.compareTo("") == 0){
-      int index = (date.weekday - 1) >= days.length ? 0 : date.weekday - 1;
-      _daySelected = days[index];
-    }
-    if(fullTimeTableData[_daySelected] == null) {
-      return Container();
-    }
+    int index = (date.weekday - 1) >= days.length ? 0 : date.weekday - 1;
 
-    _allSlot = fullTimeTableData[_daySelected]!.slots;
-    var dayChanged = false;
-    if(_tileSelected.compareTo("") == 0){
-      pageController.dispose();
-      dayChanged = true;
+    for (var day in fullTimeTableData.keys) {
+      containers.add([]);
+      for(var key in fullTimeTableData[day]!.courses.keys){
+        var value = fullTimeTableData[day]!.courses[key]!;
+        if(value == "free" && widget.naviKey == Screen.fullTimeTable) {
+          continue;
+        } else if(value != "free" && widget.naviKey == Screen.freeTimeTable) {
+          continue;
+        }
+        var inside = key.split("...");
+        var keyClasses = inside[0];
+        keyClasses = keyClasses.substring(0, keyClasses.contains("(") ? keyClasses.indexOf("(") : keyClasses.length);
+        var keySlot = inside[1];
+        if(showDayData.containsKey(keySlot)){
+          if(widget.naviKey == Screen.freeTimeTable) {
+            showDayData[keySlot]!.add(keyClasses);
+          } else {
+            showDayData[keySlot]!.add("$keyClasses...$value");
+          }
+        } else {
+          if(widget.naviKey == Screen.freeTimeTable){
+            showDayData[keySlot] = [keyClasses];
+          } else {
+            showDayData[keySlot] = ["$keyClasses...$value"];
+          }
+        }
+      }
+      for (var key in showDayData.keys) {
+        containers.last.add([]);
+        for (var i = 0; i < showDayData[key]!.length; i++) {
+          containers.last.last.add(makeContainer(showDayData[key]![i], i));
+        }
+      }
+      showDayData.clear();
+    }
+    for (var i = 0; i < containers.length; i++) {
+      tabs.add(Tab(child: Text(days[i]),));
+      _allSlot = fullTimeTableData[days[i]]!.slots;
+      nestedTabs.add([]);
+      for (var j = 0; j < containers[i].length; j++) {
+        nestedTabs[i].add(Tab(child: Text(formatSlot(_allSlot[j])),));
+      }
+      nestedDisplay.add([]);
+      for (var j = 0; j < containers[i].length; j++) {
+        if(containers[i][j].isEmpty){
+          nestedDisplay[i].add(Container(
+          margin: const EdgeInsets.only(top: 10, bottom: 127),
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height,
+            child: Center(
+              child: AnimationConfiguration.staggeredList(
+                position: 0,
+                duration: const Duration(milliseconds: 375),
+                child: SlideAnimation(
+                  child: FadeInAnimation(
+                    child: Text(
+                      widget.emptySlot,
+                      style: const TextStyle(fontSize: 30),
+                    ),
+                  ),
+                ),
+              ) 
+            ),
+          ));
+        } else {
+          nestedDisplay[i].add(Container(
+            margin: const EdgeInsets.only(top: 10),
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height,
+            child: AnimationLimiter(
+              child: ListView.builder(
+                physics: const BouncingScrollPhysics(),
+                itemCount: containers[i][j].length,
+                itemBuilder: (context, k) {
+                  return AnimationConfiguration.staggeredList(
+                    position: k,
+                    duration: const Duration(milliseconds: 375),
+                    child: SlideAnimation(
+                      child: FadeInAnimation(
+                        child: containers[i][j][k],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ));
+        }
+      }
       int slotAccordingToCurrentTime = currentSlotShouldBe(date, _allSlot);
-      _tileSelected = _allSlot[slotAccordingToCurrentTime];
-      pageController = PageController(initialPage: slotAccordingToCurrentTime, keepPage: false);
+      display.add(MyTabBar(tabs: nestedTabs[i], display: nestedDisplay[i], initialIndex: slotAccordingToCurrentTime));
     }
-
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      if(!dayChanged) return;
-      pageController.jumpToPage(_allSlot.indexOf(_tileSelected));
-    },);
-
-    for(var key in fullTimeTableData[_daySelected]!.courses.keys){
-      var value = fullTimeTableData[_daySelected]!.courses[key]!;
-      if(value == "free" && widget.naviKey == Screen.fullTimeTable) {
-        continue;
-      } else if(value != "free" && widget.naviKey == Screen.freeTimeTable) {
-        continue;
-      }
-      var inside = key.split("...");
-      var keyClasses = inside[0];
-      keyClasses = keyClasses.substring(0, keyClasses.contains("(") ? keyClasses.indexOf("(") : keyClasses.length);
-      var keySlot = inside[1];
-      if(showDayData.containsKey(keySlot)){
-        if(widget.naviKey == Screen.freeTimeTable) {
-          showDayData[keySlot]!.add(keyClasses);
-        } else {
-          showDayData[keySlot]!.add("$keyClasses...$value");
-        }
-      } else {
-        containers.add([]);
-        if(widget.naviKey == Screen.freeTimeTable){
-          showDayData[keySlot] = [keyClasses];
-        } else {
-          showDayData[keySlot] = ["$keyClasses...$value"];
-        }
-      }
-    }
-    for (var key in showDayData.keys) {
-      int index = _allSlot.indexOf(key);
-      for (var i = 0; i < showDayData[key]!.length; i++) {
-        containers[index].add(makeContainer(key, i));
-      }
-    }
-    return pageViewBuilder();
+    return MyTabBar(tabs: tabs, display: display, initialIndex: index, drawer: MyNavigationDrawer(widget.naviKey), title: widget.appBarText,);
   }
   
   String formatSlot(String txt){
@@ -192,194 +238,7 @@ class _FullFreeTimeTableState extends State<FullFree> {
     return "${addingColon(first)}-${addingColon(second)}";
   }
 
-  Widget pageViewBuilder() {
-    int indexOfCurrentDaySelected = days.indexOf(_daySelected);
-    int indexOfCurrentSlotSelected = _allSlot.indexOf(_tileSelected);
-    return Stack(
-      alignment: AlignmentDirectional.center,
-      children: <Widget>[
-        Container(
-          margin: const EdgeInsets.only(top: 10, bottom: 127),
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height,
-          child: PageView.builder(
-            controller: pageController,
-            itemCount: containers.length,
-            itemBuilder: (context, i) {
-              if(containers[i].isEmpty){
-                return Center(
-                  child: AnimationConfiguration.staggeredList(
-                    position: 0,
-                    duration: const Duration(milliseconds: 375),
-                    child: SlideAnimation(
-                      child: FadeInAnimation(
-                        child: Text(
-                          widget.emptySlot,
-                          style: const TextStyle(fontSize: 30),
-                        ),
-                      ),
-                    ),
-                  ) 
-                );
-              }
-              return AnimationLimiter(
-                child: ListView.builder(
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: containers[i].length,
-                  itemBuilder: (context, j) {
-                    return AnimationConfiguration.staggeredList(
-                      position: j,
-                      duration: const Duration(milliseconds: 375),
-                      child: SlideAnimation(
-                        child: FadeInAnimation(
-                          child: containers[i][j]
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-            onPageChanged: (value) {
-              setState(() {
-                _tileSelected = _allSlot[value];
-              });
-            },
-          ),
-        ),
-        Positioned(
-          bottom: 127,
-          child: Container(
-            width: MediaQuery.of(context).size.width,
-            height: 2,
-            color: Colors.black,
-          ),
-        ),
-        if(indexOfCurrentSlotSelected != 0) makePositioned(
-          bottom: 16, left: 10, onTapChange: _allSlot[indexOfCurrentSlotSelected - 1], data: Icons.arrow_back, isDay: false,
-        ),
-        if(indexOfCurrentSlotSelected + 1 != _allSlot.length) makePositioned(
-          bottom: 16, right: 10, onTapChange: _allSlot[indexOfCurrentSlotSelected + 1], data: Icons.arrow_forward, isDay: false,
-        ),
-        if(indexOfCurrentDaySelected != 0) makePositioned(
-          bottom: 75, left: 10, onTapChange: days[indexOfCurrentDaySelected - 1], data: Icons.arrow_back, isDay: true,
-        ),
-        if(indexOfCurrentDaySelected + 1 != days.length) makePositioned(
-          bottom: 75, right: 10, onTapChange: days[indexOfCurrentDaySelected + 1], data: Icons.arrow_forward, isDay: true,
-        ),
-        makeDropdownButtonPositioned(bottom: 70, isDay: true),
-        makeDropdownButtonPositioned(bottom: 12, isDay: false),
-      ],
-    );
-  }
-
-  Positioned makeDropdownButtonPositioned({
-    required double bottom, required bool isDay
-  }) {
-    List<String> displayList;
-    List<String> valueList;
-
-    if(isDay){
-      valueList = days;
-      displayList = [];
-      for (var i = 0; i < days.length; i++) {
-        // MONDAY -> Monday
-        displayList.add("${days[i][0]}${days[i].substring(1).toLowerCase()}");
-      }
-    } else {
-      valueList = _allSlot;
-      displayList = [];
-      for (var i = 0; i < _allSlot.length; i++) {
-        displayList.add(formatSlot(_allSlot[i]));
-      }
-    }
-    return Positioned(
-      bottom: bottom,
-      child: Container(
-        padding: const EdgeInsets.only(left: 3),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.black, width: 2),
-        ),
-        child: Center(
-          child: DropdownButton(
-            value: isDay ? _daySelected : _tileSelected,
-            underline: const SizedBox(),
-            iconSize: 20,
-            items: <DropdownMenuItem>[
-              for(int i = 0; i < valueList.length; i++)...[
-                DropdownMenuItem(
-                  value: valueList[i],
-                  child: Text(displayList[i], style: const TextStyle(fontSize: 15),),
-                )
-              ]
-            ], 
-            onChanged: (value) {
-              if(_daySelected.compareTo(value) == 0) return;
-              if(_tileSelected.compareTo(value) == 0) return;
-              if(isDay){
-                _daySelected = value;
-                _tileSelected = "";
-                setState(() {
-                });
-              } else {
-                pageController.jumpToPage(_allSlot.indexOf(value));
-              }
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Positioned makePositioned({required double bottom, double? right, double? left, 
-                                required String onTapChange, required IconData data, required bool isDay}){
-    String display;
-    if(isDay) {
-      display = "${onTapChange[0]}${onTapChange.substring(1).toLowerCase()}";
-    
-    } else {
-      display = formatSlot(onTapChange);
-    
-    }return Positioned(
-      bottom: bottom,
-      right: right,
-      left: left,
-      child: GestureDetector(
-        onTap: () {
-          if(isDay){
-            _daySelected = onTapChange;
-            _tileSelected = "";
-            setState(() {
-            });
-          } else {
-            pageController.jumpToPage(_allSlot.indexOf(onTapChange));
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 7),
-          decoration: BoxDecoration(
-            color: Colors.blueAccent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              if(data == Icons.arrow_back)...[
-                Icon(data, size: 15,),
-                Text(display, style: const TextStyle(fontSize: 15),),
-              ],
-              if(data == Icons.arrow_forward)...[
-                Text(display, style: const TextStyle(fontSize: 15),),
-                Icon(data, size: 15,),
-              ]
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Container makeContainer(String slot, int j){
+  Container makeContainer(String value, int j){
     if(!context.mounted) return Container();
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -390,8 +249,8 @@ class _FullFreeTimeTableState extends State<FullFree> {
         gradient: Provider.of<ModelTheme>(context, listen: false).getGradient()
       ),
       child: widget.naviKey == Screen.fullTimeTable 
-        ? makeFullWidget(showDayData[slot]![j])
-        : makeFreeWidget(showDayData[slot]![j])
+        ? makeFullWidget(value)
+        : makeFreeWidget(value)
     );
   }
 

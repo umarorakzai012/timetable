@@ -6,6 +6,7 @@ import 'package:timetable/choose_courses.dart';
 import 'package:timetable/enum_screen.dart';
 import 'package:timetable/full_free.dart';
 import 'package:timetable/navigation_drawer.dart';
+import 'package:timetable/tab_view.dart';
 import 'package:timetable/timetable_data.dart';
 import 'package:timetable/update_checker.dart';
 
@@ -25,8 +26,6 @@ class YourTimeTable extends StatefulWidget {
 }
 
 class _YourTimeTableState extends State<YourTimeTable> {
-  String _daySelectedYourTimeTable = "";
-  PageController pageController = PageController();
   late TextStyle textStyle;
 
   List<String> readmeContent = [], days = [];
@@ -44,15 +43,19 @@ class _YourTimeTableState extends State<YourTimeTable> {
       load();
     }
     CheckUpdate(fromNavigation: false, context: context);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Your TimeTable"),
-      ),
-      body: loaded
-          ? yourTimeTableData.isEmpty ? const Center(child: Text("Please Select Course(s)"),) : buildYourTimeTableScreen() 
-          : const Center(child: Text("Please Upload An Excel File")),
-      drawer : const MyNavigationDrawer(Screen.yourTimeTable),
-    );
+    days = yourTimeTableData.keys.toList();
+    if(yourTimeTableData.isEmpty){
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text("Your TimeTable"),
+        ),
+        body: loaded 
+        ? const Center(child: Text("Please Select Course(s)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),)) 
+        : const Center(child: Text("Please Upload An Excel File", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20))),
+        drawer : const MyNavigationDrawer(Screen.yourTimeTable),
+      );
+    }
+    return buildYourTimeTableScreen();
   }
 
   Widget buildYourTimeTableScreen() {
@@ -60,18 +63,12 @@ class _YourTimeTableState extends State<YourTimeTable> {
     List<List<String>> slots = [], classes = [], value = [];
     List<List<Container>> containers = [];
 
-    if(_daySelectedYourTimeTable.compareTo("") == 0){
-      int index = (DateTime.now().weekday - 1) >= days.length ? 0 : DateTime.now().weekday - 1;
-      _daySelectedYourTimeTable = days[index];
-      pageController.dispose();
-      pageController = PageController(initialPage: index);
+    List<Tab> tabs = [];
+    for (var i = 0; i < days.length; i++) {
+      tabs.add(Tab(child: Text(days[i]),));
     }
-    
-    int indexOfCurrentDaySelected = days.indexOf(_daySelectedYourTimeTable);
 
-    // WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-    //   pageController.jumpToPage(indexOfCurrentDaySelected);
-    // });
+    int index = (DateTime.now().weekday - 1) >= days.length ? 0 : DateTime.now().weekday - 1;
 
     DateTime now = DateTime.now();
     for (var i = 0; i < days.length; i++) {
@@ -112,118 +109,48 @@ class _YourTimeTableState extends State<YourTimeTable> {
         containers[i].add(makeContainer(slots[i][j], classes[i][j], value[i][j]));
       }
     }
-    return Stack(
-      alignment: AlignmentDirectional.center,
-      children: [
-        Container(
-          margin: const EdgeInsets.only(top: 10, bottom: 78),
-          width: MediaQuery.of(context).size.width,
-          child: PageView.builder(
-            controller: pageController,
-            itemCount: days.length,
-            itemBuilder: (context, i) {
-              if(value[i].isEmpty){
-                return const Center(
-                  child: AnimationConfiguration.staggeredList(
-                    position: 0,
-                    duration: Duration(milliseconds: 375),
-                    child: SlideAnimation(
-                      child: FadeInAnimation(
-                        child: Text(
-                          "Free Day",
-                          style: TextStyle(fontSize: 30),
-                        ),
-                      ),
-                    ),
-                  ) 
-                );
-              }
-              return AnimationLimiter(
-                child: ListView.builder(
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: containers[i].length,
-                  itemBuilder: (context, j) {
-                    return AnimationConfiguration.staggeredList(
-                      position: j,
-                      duration: const Duration(milliseconds: 375),
-                      child: SlideAnimation(
-                        child: FadeInAnimation(
-                          child: containers[i][j]
-                        ),
-                      )
-                    );
-                  },
+    List<Widget> display = [];
+    for (var i = 0; i < days.length; i++) {
+      if(value[i].isEmpty){
+        display.add(const Center(
+          child: AnimationConfiguration.staggeredList(
+            position: 0,
+            duration: Duration(milliseconds: 375),
+            child: SlideAnimation(
+              child: FadeInAnimation(
+                child: Text(
+                  "Free Day",
+                  style: TextStyle(fontSize: 30),
                 ),
-              );
-            },
-            onPageChanged: (value) {
-              setState(() {
-                _daySelectedYourTimeTable = days[value];
-              });
-            },
-          )
-        ),
-        Positioned(
-          bottom: 78,
-          child: Container(
-            width: MediaQuery.of(context).size.width,
-            height: 2,
-            color: Colors.black,
-          ),
-        ),
-        if(indexOfCurrentDaySelected != 0) Positioned(
-          bottom: 10,
-          left: 10,
-          child: FloatingActionButton(
-            onPressed: () {
-              pageController.jumpToPage(indexOfCurrentDaySelected - 1);
-            },
-            heroTag: null,
-            child: const Icon(Icons.arrow_back),
-          ),
-        ),
-        if(indexOfCurrentDaySelected + 1 != days.length) Positioned(
-          bottom: 10,
-          right: 10,
-          child: FloatingActionButton(
-            onPressed: () {
-              pageController.jumpToPage(indexOfCurrentDaySelected + 1);
-            },
-            heroTag: null,
-            child: const Icon(Icons.arrow_forward),
-          ),
-        ),
-        Positioned(
-          bottom: 13,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: Colors.black, width: 2),
-            ),
-            child: Center(
-              child: DropdownButton(
-                value: _daySelectedYourTimeTable,
-                underline: const SizedBox(),
-                iconSize: 36,
-                items: <DropdownMenuItem>[
-                  for(int i = 0; i < days.length; i++)...[
-                    DropdownMenuItem(
-                      value: days[i],
-                      child: Text(days[i]),
-                    )
-                  ]
-                ], 
-                onChanged: (value) {
-                  if(_daySelectedYourTimeTable.compareTo(value) == 0) return;
-                  pageController.jumpToPage(days.indexOf(value));
-                },
               ),
             ),
+          ) 
+        ));
+      } else {
+        display.add(Container(
+          margin: const EdgeInsets.only(top: 10, bottom: 78),
+          width: MediaQuery.of(context).size.width,
+          child: AnimationLimiter(
+            child: ListView.builder(
+              physics: const BouncingScrollPhysics(),
+              itemCount: containers[i].length,
+              itemBuilder: (context, j) {
+                return AnimationConfiguration.staggeredList(
+                  position: j,
+                  duration: const Duration(milliseconds: 375),
+                  child: SlideAnimation(
+                    child: FadeInAnimation(
+                      child: containers[i][j]
+                    ),
+                  )
+                );
+              },
+            )
           ),
-        )
-      ],
-    );
+        ));
+      }
+    }
+    return MyTabBar(tabs: tabs, display: display, title: "Your TimeTable", initialIndex: index, drawer: const MyNavigationDrawer(Screen.yourTimeTable),);
   }
 
   String formattingSlots(String slot){

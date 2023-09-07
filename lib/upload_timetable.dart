@@ -229,9 +229,10 @@ Future read(Uint8List? fileBytes) async {
       for(int j = 1 + additionalColumns; j < last.slots.length + 1 + additionalColumns; j++){
         var value = rowsAndColumn[i][j] == null ? "free" : rowsAndColumn[i][j]!.value.toString();
         var split = value.split("\n");
+        split.removeWhere((element) => element.compareTo("") == 0);
         var txt1 = split[0].trim();
         var txt2 = "";
-        if(split.length == 2) txt2 = "\n${split[1].trim()}";
+        if(split.length >= 2) txt2 = "\n${split[1].trim()}";
         var txt = "$txt1$txt2";
         last.courses["${last.classes[i - 4 - additionalRows]}...${last.slots[j - 1 - additionalColumns]}"] = txt;
         if(txt.toLowerCase().contains("lab b") || txt.toLowerCase().contains("reserved for ee")) {
