@@ -166,7 +166,7 @@ class _FullFreeTimeTableState extends State<FullFree> {
       for (var key in showDayData.keys) {
         containers.last.add([]);
         for (var i = 0; i < showDayData[key]!.length; i++) {
-          containers.last.last.add(makeContainer(showDayData[key]![i], i));
+          containers.last.last.add(makeContainer(showDayData[key]![i]));
         }
       }
       showDayData.clear();
@@ -238,7 +238,7 @@ class _FullFreeTimeTableState extends State<FullFree> {
     return "${addingColon(first)}-${addingColon(second)}";
   }
 
-  Container makeContainer(String value, int j){
+  Container makeContainer(String value){
     if(!context.mounted) return Container();
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20),
