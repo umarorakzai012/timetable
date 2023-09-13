@@ -235,7 +235,7 @@ Future read(Uint8List? fileBytes) async {
         if(split.length >= 2) txt2 = "\n${split[1].trim()}";
         var txt = "$txt1$txt2";
         last.courses["${last.classes[i - 4 - additionalRows]}...${last.slots[j - 1 - additionalColumns]}"] = txt;
-        if(txt.toLowerCase().contains("lab b") || txt.toLowerCase().contains("reserved for ee")) {
+        if(txt.toLowerCase().contains("lab b") || txt.toLowerCase().contains("reserved for ee") || txt.toLowerCase().contains(" lab-")) {
           j += 2;
         }
         if(txt == "free") continue;

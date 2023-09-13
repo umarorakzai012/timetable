@@ -152,18 +152,22 @@ class _FullFreeTimeTableState extends State<FullFree> {
         if(showDayData.containsKey(keySlot)){
           if(widget.naviKey == Screen.freeTimeTable) {
             showDayData[keySlot]!.add(keyClasses);
+            
+            
           } else {
             showDayData[keySlot]!.add("$keyClasses...$value");
           }
         } else {
           if(widget.naviKey == Screen.freeTimeTable){
             showDayData[keySlot] = [keyClasses];
+            if(day == "TUESDAY") 
+              print("$keyClasses $keySlot $value");
           } else {
             showDayData[keySlot] = ["$keyClasses...$value"];
           }
         }
       }
-      for (var key in showDayData.keys) {
+      for (var key in fullTimeTableData[day]!.slots) {
         containers.last.add([]);
         for (var i = 0; i < showDayData[key]!.length; i++) {
           containers.last.last.add(makeContainer(showDayData[key]![i]));
