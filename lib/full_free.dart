@@ -26,32 +26,37 @@ class _FullFreeTimeTableState extends State<FullFree> {
   List<String> _allSlot = [], days = [];
   List<List<List<Container>>> containers = [];
 
-  Future<bool> pushReplacementToYourTimeTable(){
+  void pushReplacementToYourTimeTable(bool pop) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => const YourTimeTable(),
         maintainState: false,
       ),
     );
-    return Future(() => true);
   }
 
   @override
   Widget build(BuildContext context) {
-    if(!loaded && fullTimeTableData.isEmpty){
-      return WillPopScope(
-        onWillPop: pushReplacementToYourTimeTable,
+    if (!loaded && fullTimeTableData.isEmpty) {
+      return PopScope(
+        canPop: false,
+        onPopInvoked: pushReplacementToYourTimeTable,
         child: Scaffold(
           appBar: AppBar(
             title: Text(widget.appBarText),
           ),
-          body: const Center(child: Text("Please Upload An Excel File", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20))),
+          body: const Center(
+            child: Text(
+              "Please Upload An Excel File",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+            ),
+          ),
           drawer: MyNavigationDrawer(widget.naviKey),
-        ), 
+        ),
       );
     }
-    return WillPopScope(
-      onWillPop: pushReplacementToYourTimeTable,
+    return PopScope(
+      onPopInvoked: pushReplacementToYourTimeTable,
       child: buildFullTimeTableScreen(),
     );
   }
@@ -66,28 +71,28 @@ class _FullFreeTimeTableState extends State<FullFree> {
     return show;
   }
 
-  String makingOfLengthFive(String toFormat){
-    if(toFormat.length == 5) return toFormat;
+  String makingOfLengthFive(String toFormat) {
+    if (toFormat.length == 5) return toFormat;
 
     var split = toFormat.split(":");
     var first = split[0];
     var end = split[1];
-    if(first.length == 1) first = "0$first";
-    if(end.length == 1) end = "0$end";
+    if (first.length == 1) first = "0$first";
+    if (end.length == 1) end = "0$end";
     return "$first:$end";
   }
 
   String addingColon(String toFormat) {
-    if(toFormat.contains(":")) return makingOfLengthFive(toFormat);
+    if (toFormat.contains(":")) return makingOfLengthFive(toFormat);
     return makingOfLengthFive("$toFormat:0");
   }
 
   // time -> 08 OR 8:50
-  DateTime createDateTime(String time, DateTime date){ 
+  DateTime createDateTime(String time, DateTime date) {
     var temp = time.split(":");
     var tempInt = int.parse(temp[0]);
     int hour = 0;
-    if(tempInt > 7 && tempInt <= 12){
+    if (tempInt > 7 && tempInt <= 12) {
       hour = tempInt;
     } else {
       hour = tempInt + 12;
@@ -111,10 +116,11 @@ class _FullFreeTimeTableState extends State<FullFree> {
       var temp = selectedFromThese[i].split("-");
       var from = createDateTime(temp[0], date);
       var to = createDateTime(temp[1], date);
-      if((date.isAfter(from) && date.isBefore(to)) || date.isAtSameMomentAs(from)){
+      if ((date.isAfter(from) && date.isBefore(to)) ||
+          date.isAtSameMomentAs(from)) {
         return i;
       }
-      if(afterIsBeforeOfLastOne && date.isBefore(from)){
+      if (afterIsBeforeOfLastOne && date.isBefore(from)) {
         return i;
       }
       afterIsBeforeOfLastOne = date.isAfter(to);
@@ -138,30 +144,30 @@ class _FullFreeTimeTableState extends State<FullFree> {
 
     for (var day in fullTimeTableData.keys) {
       containers.add([]);
-      for(var key in fullTimeTableData[day]!.courses.keys){
+      for (var key in fullTimeTableData[day]!.courses.keys) {
         var value = fullTimeTableData[day]!.courses[key]!;
-        if(value == "free" && widget.naviKey == Screen.fullTimeTable) {
+        if (value == "free" && widget.naviKey == Screen.fullTimeTable) {
           continue;
-        } else if(value != "free" && widget.naviKey == Screen.freeTimeTable) {
+        } else if (value != "free" && widget.naviKey == Screen.freeTimeTable) {
           continue;
         }
         var inside = key.split("...");
         var keyClasses = inside[0];
-        keyClasses = keyClasses.substring(0, keyClasses.contains("(") ? keyClasses.indexOf("(") : keyClasses.length);
+        keyClasses = keyClasses.substring(
+            0,
+            keyClasses.contains("(")
+                ? keyClasses.indexOf("(")
+                : keyClasses.length);
         var keySlot = inside[1];
-        if(showDayData.containsKey(keySlot)){
-          if(widget.naviKey == Screen.freeTimeTable) {
+        if (showDayData.containsKey(keySlot)) {
+          if (widget.naviKey == Screen.freeTimeTable) {
             showDayData[keySlot]!.add(keyClasses);
-            
-            
           } else {
             showDayData[keySlot]!.add("$keyClasses...$value");
           }
         } else {
-          if(widget.naviKey == Screen.freeTimeTable){
+          if (widget.naviKey == Screen.freeTimeTable) {
             showDayData[keySlot] = [keyClasses];
-            if(day == "TUESDAY") 
-              print("$keyClasses $keySlot $value");
           } else {
             showDayData[keySlot] = ["$keyClasses...$value"];
           }
@@ -176,100 +182,117 @@ class _FullFreeTimeTableState extends State<FullFree> {
       showDayData.clear();
     }
     for (var i = 0; i < containers.length; i++) {
-      tabs.add(Tab(child: Text(days[i]),));
+      tabs.add(Tab(
+        child: Text(days[i]),
+      ));
       _allSlot = fullTimeTableData[days[i]]!.slots;
       nestedTabs.add([]);
       for (var j = 0; j < containers[i].length; j++) {
-        nestedTabs[i].add(Tab(child: Text(formatSlot(_allSlot[j])),));
+        nestedTabs[i].add(Tab(
+          child: Text(formatSlot(_allSlot[j])),
+        ));
       }
       nestedDisplay.add([]);
       for (var j = 0; j < containers[i].length; j++) {
-        if(containers[i][j].isEmpty){
+        if (containers[i][j].isEmpty) {
           nestedDisplay[i].add(Container(
-          margin: const EdgeInsets.only(top: 10, bottom: 127),
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height,
-            child: Center(
-              child: AnimationConfiguration.staggeredList(
-                position: 0,
-                duration: const Duration(milliseconds: 375),
-                child: SlideAnimation(
-                  child: FadeInAnimation(
-                    child: Text(
-                      widget.emptySlot,
-                      style: const TextStyle(fontSize: 30),
-                    ),
-                  ),
-                ),
-              ) 
-            ),
-          ));
-        } else {
-          nestedDisplay[i].add(Container(
-            margin: const EdgeInsets.only(top: 10),
+            margin: const EdgeInsets.only(top: 10, bottom: 127),
             width: MediaQuery.of(context).size.width,
             height: MediaQuery.of(context).size.height,
-            child: AnimationLimiter(
-              child: ListView.builder(
-                physics: const BouncingScrollPhysics(),
-                itemCount: containers[i][j].length,
-                itemBuilder: (context, k) {
-                  return AnimationConfiguration.staggeredList(
-                    position: k,
-                    duration: const Duration(milliseconds: 375),
-                    child: SlideAnimation(
-                      child: FadeInAnimation(
-                        child: containers[i][j][k],
+            child: Center(
+                child: AnimationConfiguration.staggeredList(
+              position: 0,
+              duration: const Duration(milliseconds: 375),
+              child: SlideAnimation(
+                child: FadeInAnimation(
+                  child: Text(
+                    widget.emptySlot,
+                    style: const TextStyle(fontSize: 30),
+                  ),
+                ),
+              ),
+            )),
+          ));
+        } else {
+          nestedDisplay[i].add(
+            Container(
+              margin: const EdgeInsets.only(top: 10),
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+              child: AnimationLimiter(
+                child: ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: containers[i][j].length,
+                  itemBuilder: (context, k) {
+                    return AnimationConfiguration.staggeredList(
+                      position: k,
+                      duration: const Duration(milliseconds: 375),
+                      child: SlideAnimation(
+                        child: FadeInAnimation(
+                          child: containers[i][j][k],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
-          ));
+          );
         }
       }
       int slotAccordingToCurrentTime = currentSlotShouldBe(date, _allSlot);
-      display.add(MyTabBar(tabs: nestedTabs[i], display: nestedDisplay[i], initialIndex: slotAccordingToCurrentTime));
+      display.add(
+        MyTabBar(
+          tabs: nestedTabs[i],
+          display: nestedDisplay[i],
+          initialIndex: slotAccordingToCurrentTime,
+        ),
+      );
     }
-    return MyTabBar(tabs: tabs, display: display, initialIndex: index, drawer: MyNavigationDrawer(widget.naviKey), title: widget.appBarText,);
+    return MyTabBar(
+      tabs: tabs,
+      display: display,
+      initialIndex: index,
+      drawer: MyNavigationDrawer(widget.naviKey),
+      title: widget.appBarText,
+    );
   }
-  
-  String formatSlot(String txt){
+
+  String formatSlot(String txt) {
     var split = txt.split("-");
     var first = split[0];
     var second = split[1];
     return "${addingColon(first)}-${addingColon(second)}";
   }
 
-  Container makeContainer(String value){
-    if(!context.mounted) return Container();
+  Container makeContainer(String value) {
+    if (!context.mounted) return Container();
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      margin: const EdgeInsets.all(5),
-      // height: 85,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        gradient: Provider.of<ModelTheme>(context, listen: false).getGradient()
-      ),
-      child: widget.naviKey == Screen.fullTimeTable 
-        ? makeFullWidget(value)
-        : makeFreeWidget(value)
-    );
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        margin: const EdgeInsets.all(5),
+        // height: 85,
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            gradient:
+                Provider.of<ModelTheme>(context, listen: false).getGradient()),
+        child: widget.naviKey == Screen.fullTimeTable
+            ? makeFullWidget(value)
+            : makeFreeWidget(value));
   }
 
-  Widget makeFullWidget(String value){
+  Widget makeFullWidget(String value) {
     var spliting = value.split("...");
     var classShow = spliting[0];
     var sectionShow = spliting[1].split("\n");
     return Row(
       children: [
-        const SizedBox(width: 15,),
-        SizedBox(
-          width: 80,
-          child: Center(child: makeText(classShow))
+        const SizedBox(
+          width: 15,
         ),
-        const SizedBox(width: 10,),
+        SizedBox(width: 80, child: Center(child: makeText(classShow))),
+        const SizedBox(
+          width: 10,
+        ),
         SizedBox(
           width: MediaQuery.of(context).size.width - 115,
           child: Center(
@@ -277,7 +300,9 @@ class _FullFreeTimeTableState extends State<FullFree> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 makeText(sectionShow[0]),
-                sectionShow.length == 2 ? makeText(sectionShow[1]) : makeText(""),
+                sectionShow.length == 2
+                    ? makeText(sectionShow[1])
+                    : makeText(""),
               ],
             ),
           ),
@@ -286,21 +311,20 @@ class _FullFreeTimeTableState extends State<FullFree> {
     );
   }
 
-  Widget makeFreeWidget(String classShow){
+  Widget makeFreeWidget(String classShow) {
     return Center(
-      child: Text(
-        classShow,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 18,
-        ),
-      )
-    );
+        child: Text(
+      classShow,
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 18,
+      ),
+    ));
   }
 }
 
-Widget makeText(String text){
+Widget makeText(String text) {
   return Text(
     text,
     textAlign: TextAlign.center,

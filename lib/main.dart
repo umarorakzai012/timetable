@@ -10,13 +10,13 @@ import 'model_theme.dart';
 late MySelectionPreferences selectionPreferences;
 ChooseCourse chooseCourse = ChooseCourse();
 
-void main(){
+void main() {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget{
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
@@ -24,7 +24,6 @@ class MyApp extends StatefulWidget{
 }
 
 class _MyAppState extends State<MyApp> {
-
   @override
   Widget build(BuildContext context) {
     selectionPreferences = MySelectionPreferences();
@@ -46,9 +45,11 @@ class _MyAppState extends State<MyApp> {
   ThemeData themeChanger(ModelTheme themeNotifier) {
     return themeNotifier.isDark
         ? ThemeData(
+            useMaterial3: false,
             brightness: Brightness.dark,
           )
         : ThemeData(
+            useMaterial3: false,
             brightness: Brightness.light,
             primaryColor: Colors.white,
           );
