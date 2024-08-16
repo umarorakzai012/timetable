@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
@@ -175,8 +177,10 @@ class _FullFreeTimeTableState extends State<FullFree> {
       }
       for (var key in fullTimeTableData[day]!.slots) {
         containers.last.add([]);
-        for (var i = 0; i < showDayData[key]!.length; i++) {
-          containers.last.last.add(makeContainer(showDayData[key]![i]));
+        if (showDayData[key] != null) {
+          for (var i = 0; i < showDayData[key]!.length; i++) {
+            containers.last.last.add(makeContainer(showDayData[key]![i]));
+          }
         }
       }
       showDayData.clear();
