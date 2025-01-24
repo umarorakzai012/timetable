@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
@@ -272,16 +270,17 @@ class _FullFreeTimeTableState extends State<FullFree> {
   Container makeContainer(String value) {
     if (!context.mounted) return Container();
     return Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        margin: const EdgeInsets.all(5),
-        // height: 85,
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
-            gradient:
-                Provider.of<ModelTheme>(context, listen: false).getGradient()),
-        child: widget.naviKey == Screen.fullTimeTable
-            ? makeFullWidget(value)
-            : makeFreeWidget(value));
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      margin: const EdgeInsets.all(5),
+      // height: 85,
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+          gradient:
+              Provider.of<ModelTheme>(context, listen: false).getGradient()),
+      child: widget.naviKey == Screen.fullTimeTable
+          ? makeFullWidget(value)
+          : makeFreeWidget(value),
+    );
   }
 
   Widget makeFullWidget(String value) {

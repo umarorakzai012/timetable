@@ -21,6 +21,7 @@ bool oncecc = true;
 
 class _ChooseCourseScreenState extends State<ChooseCourseScreen> {
   var _showBy = "";
+  bool _showSelected = false;
 
   void pushReplacementToYourTimeTable(bool pop) {
     Navigator.of(context).pushReplacement(
@@ -65,6 +66,20 @@ class _ChooseCourseScreenState extends State<ChooseCourseScreen> {
                     yourTimeTableData);
                 setState(() {
                   showToast(context, "Cleared Selection");
+                });
+              },
+            ),
+            GestureDetector(
+              child: Container(
+                margin: const EdgeInsets.only(right: 20),
+                child: const Icon(
+                  Icons.select_all,
+                  size: 33,
+                ),
+              ),
+              onTap: () async {
+                setState(() {
+                  _showSelected = !_showSelected;
                 });
               },
             ),
@@ -114,9 +129,16 @@ class _ChooseCourseScreenState extends State<ChooseCourseScreen> {
                       shrinkWrap: true,
                       itemCount: copyChoose.length,
                       itemBuilder: (context, index) {
+                        bool isSelected =
+                            current.contains(copyChoose.elementAt(index));
+
+                        if (_showSelected && !isSelected) {
+                          return const SizedBox(width: 0, height: 0);
+                        }
+
                         return CheckboxListTile(
                           controlAffinity: ListTileControlAffinity.leading,
-                          value: current.contains(copyChoose.elementAt(index)),
+                          value: isSelected,
                           tristate: false,
                           onChanged: (value) {
                             if (value == null) return;

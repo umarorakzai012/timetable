@@ -206,7 +206,7 @@ class _YourTimeTableState extends State<YourTimeTable> {
     return Text(
       text,
       textAlign: TextAlign.center,
-      softWrap: true,
+      // softWrap: true,
       style: textStyle,
     );
   }
@@ -216,28 +216,34 @@ class _YourTimeTableState extends State<YourTimeTable> {
     String bottom = slot.split("-")[1];
     top = formattingSlots(top);
     bottom = formattingSlots(bottom);
+
     return Container(
-      height: 85,
-      margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
+      // height: 85,
+      margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(4),
         gradient: Provider.of<ModelTheme>(context, listen: false).getGradient(),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
           Container(
-              margin: const EdgeInsets.only(left: 10),
-              // width: 80,
-              child: Center(child: makeYourText(classes))),
+            margin: const EdgeInsets.only(left: 10),
+            child: SizedBox(
+              width: 80,
+              child: Center(child: makeYourText(classes)),
+            ),
+          ),
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (!value.contains("\n")) ...[
-                SizedBox(
-                  width: MediaQuery.of(context).size.width - 160,
-                  child: makeYourText(value),
-                ),
+                // SizedBox(
+                //   width: MediaQuery.of(context).size.width - 160,
+                //   child: makeYourText(value),
+                // ),
+                makeYourText(value),
               ] else ...[
                 makeYourText(value.split("\n")[0]),
                 value.split("\n").length == 2
