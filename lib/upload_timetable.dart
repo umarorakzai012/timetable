@@ -137,7 +137,7 @@ class _UploadTimeTableScreenState extends State<UploadTimeTableScreen> {
                       color: Colors.white,
                     ),
                   )
-                : const Text("Sync"),
+                : const Text("Sync with Google Sheet"),
           ),
         ),
       ],
